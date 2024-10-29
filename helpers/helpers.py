@@ -1,6 +1,38 @@
 import re
 import datetime
 
+def formatear_horarios_disponibles(horarios):
+    return " | ".join(horarios)
+
+def formatear_historial_conversaciones(conversaciones):
+    """Convierte un historial de conversaciones en un formato de string concatenado."""
+    historial_completo = []
+    
+    for conversacion in conversaciones:
+        # Llamar a formatear_conversacion para cada conversación en el historial
+        historial_formateado = formatear_conversacion(conversacion)
+        historial_completo.append(historial_formateado)
+    
+    return "\n\n".join(historial_completo)
+
+
+def formatear_conversacion(conversacion):
+    """Convierte una conversación en un formato de string con saltos de línea entre interacciones."""
+    historial_formateado = []
+    
+    for interaccion in conversacion.get("interacciones", []):
+        mensaje_cliente = interaccion.get("mensaje_cliente", "")
+        mensaje_chatbot = interaccion.get("mensaje_chatbot", "")
+
+        if mensaje_cliente:
+            historial_formateado.append(f'Cliente: "{mensaje_cliente}"')
+        if mensaje_chatbot:
+            historial_formateado.append(f'Asesor: "{mensaje_chatbot}"')
+    
+    # Unir el historial en un solo string con saltos de línea
+    return "\n".join(historial_formateado)
+
+
 def extract_datetime(message):
     print("Mensaje recibido:", repr(message))
     # Expresiones regulares para distintos formatos de fecha y hora
