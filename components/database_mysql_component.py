@@ -150,3 +150,80 @@ class DataBaseMySQLManager:
         cursor.execute(query,(nuevo_estado,client_id))
         self.connection.commit()
         print(f"Estado del cliente {client_id} actualizado a {nuevo_estado}.")
+    
+    def actualizar_fecha_ultima_interaccion(self, cliente_id, fecha):
+        cursor = self.connection.cursor()
+        sql = "UPDATE clientes SET fecha_ultima_interaccion = %s WHERE cliente_id = %s"
+        cursor.execute(sql, (fecha, cliente_id))
+
+        # Actualiza la fecha en la conversación activa
+        sql_conversacion = """
+            UPDATE conversaciones 
+            SET fecha_ultima_interaccion = %s 
+            WHERE cliente_id = %s AND estado_conversacion = 'activa'
+        """
+        cursor.execute(sql_conversacion, (fecha, cliente_id))
+
+        self.connection.commit()
+        cursor.close()
+
+    def actualizar_fecha_ultima_interaccion_bot(self, cliente_id, fecha):
+        cursor = self.connection.cursor()
+        sql = "UPDATE clientes SET fecha_ultima_interaccion_bot = %s WHERE cliente_id = %s"
+        cursor.execute(sql, (fecha, cliente_id))
+        
+        # Actualiza la fecha en la conversación activa
+        sql_conversacion = """
+            UPDATE conversaciones 
+            SET fecha_ultima_interaccion = %s 
+            WHERE cliente_id = %s AND estado_conversacion = 'activa'
+        """
+        cursor.execute(sql_conversacion, (fecha, cliente_id))    
+        
+        self.connection.commit()
+        cursor.close()
+
+    
+    def obtener_citas_pendientes(self):
+        cursor = self.connection.cursor(dictionary=True)
+        sql = """
+            SELECT c.*, p.estado_pago FROM citas c
+            LEFT JOIN pagos p ON c.cita_id = p.cita_id
+            WHERE c.estado_cita = 'agendada' AND (p.estado_pago IS NULL OR p.estado_pago != 'completado')
+        """
+        cursor.execute(sql)
+        citas = cursor.fetchall()
+        cursor.close()
+        return citas
+    
+    def obtener_todos_los_clientes(self):
+        """Obtiene los datos de un cliente por su ID."""
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM clientes"
+        cursor.execute(query)
+        return cursor.fetchall()
+    def obtener_citas_pasadas(self, fecha_actual):
+        cursor = self.connection.cursor(dictionary=True)
+        sql = """
+            SELECT * FROM citas
+            WHERE estado_cita = 'agendada' AND fecha_cita <= %s
+        """
+        cursor.execute(sql, (fecha_actual,))
+        citas = cursor.fetchall()
+        cursor.close()
+        return citas
+    
+    def actualizar_estado_cita(self, cita_id, nuevo_estado):
+        cursor = self.connection.cursor()
+        sql = "UPDATE citas SET estado_cita = %s WHERE cita_id = %s"
+        cursor.execute(sql, (nuevo_estado, cita_id))
+        self.connection.commit()
+        cursor.close()
+
+    def obtener_estado_cliente(self, cliente_id):
+        cursor = self.connection.cursor()
+        sql = "SELECT estado FROM clientes WHERE cliente_id = %s"
+        cursor.execute(sql, (cliente_id,))
+        estado = cursor.fetchone()[0]
+        cursor.close()
+        return estado

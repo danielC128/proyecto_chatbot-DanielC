@@ -48,6 +48,7 @@ class GoogleCalendarManager:
             
             # Configurar zona horaria de Lima
             lima_tz = pytz.timezone('America/Lima')
+            hoy = dt.datetime.now(lima_tz).date()
 
             # Convertir la fecha de entrada a datetime en la zona horaria de Lima
             input_date = dt.datetime.strptime(fecha, '%Y-%m-%d')
@@ -66,12 +67,17 @@ class GoogleCalendarManager:
             print("Eventos existentes: ", events)
 
             available_slots = []
-
+            now = dt.datetime.now(lima_tz)  # Hora actual en Lima
 
             for hours in working_hours:
                 # Establecer el rango de trabajo para el día actual
                 start_time = lima_tz.localize(dt.datetime.combine(input_date, hours["start"]))
                 end_time = lima_tz.localize(dt.datetime.combine(input_date, hours["end"]))
+
+                if input_date.date() == hoy and start_time < now:
+                    # Añadir una hora y redondear hacia la siguiente hora exacta
+                    now_plus_one_hour = (now + dt.timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+                    start_time = max(start_time, now_plus_one_hour)            
 
                 # Restar los eventos ocupados dentro del horario de trabajo
                 for event in events:

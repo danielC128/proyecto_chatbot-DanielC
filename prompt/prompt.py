@@ -3,30 +3,39 @@ from datetime import datetime
 def prompt_estado_cliente(estado):
     if estado == "pendiente de contacto":
         return f"""
-        El cliente aún no ha sido contactado y se encuentra en espera de una llamada. 
+        **Tono: Proactivo y cordial**  
+        El cliente aún no ha sido contactado. Es importante intentar una llamada en el horario más adecuado. Aborda la comunicación inicial con un tono amigable y cercano para generar confianza e interés en los servicios.
         """
     elif estado == "seguimiento":
         return f"""
-        El cliente tiene dudas y está en proceso de seguimiento para resolverlas.
+        **Tono: Empático y accesible**  
+        El cliente está en proceso de seguimiento y tiene dudas que necesitan ser aclaradas. Brinda respuestas claras y comprensivas, mostrando disposición para responder cualquier otra consulta que tenga, creando un ambiente de confianza y comodidad.
         """
     elif estado == "interesados":
         return f"""
-        El cliente ha mostrado interés en los servicios y solicita información adicional.
+        **Tono: Informativo y alentador**  
+        El cliente ha mostrado interés en nuestros servicios y busca más información. Dale detalles adicionales de manera concisa, resaltando los beneficios de agendar una consulta para aclarar sus inquietudes y avanzar en el proceso.
         """
     elif estado == "promesas de pago":
         return f"""
-        El cliente ha prometido realizar el pago en una fecha específica.
+        **Tono: Recordatorio amable y cercano**  
+        El cliente se ha comprometido a realizar el pago en una fecha específica. Mantén un tono amigable y accesible en el seguimiento, recordándole con amabilidad la importancia del pago para confirmar la cita y asegurar su lugar.
         """
     elif estado == "cita agendada":
         return f"""
-        El cliente ha realizado el pago y tiene una cita agendada.
+        **Tono: Agradecido y servicial**  
+        El cliente ha completado el pago y tiene una cita confirmada. Recuérdale los detalles de la cita con un tono agradecido y asegúrate de mencionar la importancia de asistir puntualmente. Ofrece cualquier información adicional que pueda necesitar.
         """
     elif estado == "no interesado":
         return f"""
-        El cliente ha indicado que no está interesado en los servicios.
+        **Tono: Negociador, cauteloso y muy amable**  
+        El cliente ha indicado que no está interesado en los servicios. Agradece su tiempo con sinceridad y, si es adecuado, pregunta de manera respetuosa y cautelosa si hay algún factor específico que haya influido en su decisión, como el precio o el momento, para ofrecer alternativas o futuras oportunidades de contacto, si sigue sin interes entonces despidete amablemente.
         """
     else:
-        return """ """
+        return f"""
+        **Tono: Neutral y estándar**  
+        El estado del cliente no está claramente especificado. Manten un tono amable y directo, ofreciendo información general sobre los servicios e invitando al cliente a hacer cualquier pregunta o a indicar en qué podemos ayudarle. Esto asegura que el cliente sienta apoyo sin que el mensaje parezca demasiado dirigido o formal.
+        """
 
 def prompt_cliente_nombre(cliente, response_message):
     return f"""
@@ -424,6 +433,8 @@ def prompt_intenciones(fecha_actual):
 
     5) **Cliente envía su nombre**: Selecciona esta opción cuando el cliente envíe su nombre en la conversación. **Incluye el nombre recibido junto al número de la opción** (por ejemplo, `5) Daniel Rivas`) para poder continuar con el flujo normal sin volver a solicitar su nombre.
 
+    6) **Cliente no muestra interés**: Selecciona esta opción cuando el cliente expresa que no está interesado en los servicios directa o indirectamente. Si el cliente menciona una razón específica (por ejemplo, el cliente considera que los precios son muy caros, etc), incluye esa razón muy bien detallada hasta donde puedas junto al número de la opción en el siguiente formato: `6) causa específica` si es que encuentras una causa del no interes, analiza toda la conversacion para eso.
+    
     **Responde solo con el número de la opción correspondiente y, si aplica, incluye la fecha o fecha y hora exacta en el formato solicitado, sin omisiones ni errores de día**. **La respuesta debe siempre basarse en {fecha_actual} y {día_actual} para calcular días relativos** como "lunes que viene" y debe ser precisa en cada interpretación analiza la conversación muy bien para esto.
 
 
