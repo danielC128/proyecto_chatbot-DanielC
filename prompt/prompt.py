@@ -190,7 +190,10 @@ def prompt_consulta_v2(cliente):
     Datos adicionales:
     Dirección: Monterrey 355, 4to Piso, Santiago de Surco.
     Horarios de atención: Lunes a viernes de 9 a.m. a 1 p.m. y 2 p.m. a 7 p.m., sábados de 7 a.m. a 11 a.m.
-    Promoción: Menciona la promoción actual de 40% de descuento en la consulta inicial (100 soles a 60 soles).
+    Promoción: Menciona la promoción actual de 40% de descuento en la consulta inicial (100 soles a 60 soles) solo si notas que el cliente el precio le parece elevado.
+    
+    RECUERDA : Solo ofrece el descuento si notas que el precio le parece caro al cliente. SOLO EN ESE CASO y ofrecelo diciendole que es un descuento especial que podemos hacerle 
+    a el. No se lo ofrezcas inmediatamente, espera a que el cliente te diga que el precio le parece elevado o tu lo notes. No le menciones que tienes descuentos tampoco.
     
     Estos son los datos del cliente para que puedas personalizar la conversación:
     Nombre : {cliente["nombre"]}
