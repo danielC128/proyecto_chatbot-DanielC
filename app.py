@@ -528,4 +528,4 @@ if __name__ == '__main__':
 
     #threading.Thread(target=verificar_estados_clientes).start()
     # Iniciar la aplicación Flask
-    app.run(port=5000)
+    app.run(debug=True,port=5000)
