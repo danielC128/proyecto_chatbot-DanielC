@@ -59,13 +59,15 @@ class LeadManager:
                 return lead
         return None
 
-    def _save_leads(self):
+    def _save_leads(self, leads=None, fieldnames=None):
         """Guarda los datos actuales en el archivo CSV."""
+        leads = leads if leads is not None else self.leads
+        fieldnames = fieldnames if fieldnames is not None else (self.leads[0].keys() if self.leads else [])
+        
         with open(self.file_path, mode='w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = self.leads[0].keys() if self.leads else []
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(self.leads)
+            writer.writerows(leads)
 
     def marcar_lead_como_analizado(self, record_id):
         """Marca un lead como analizado actualizando el campo 'Analizado' a 'Sí'."""

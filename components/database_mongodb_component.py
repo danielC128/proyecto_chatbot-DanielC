@@ -185,6 +185,30 @@ class DataBaseMongoDBManager:
         )
         print(f"Nueva interacción creada para el cliente con celular {celular}.") 
 
+    def crear_nueva_interaccion_vacia(self, celular):
+        """Crea una nueva interacción en la conversación activa del cliente."""
+        
+        # Crear el nuevo registro de interacción
+        nueva_interaccion = {
+            "fecha": datetime.now(self.lima_tz).astimezone(pytz.utc),  # Hora en UTC
+            "mensaje_cliente": "",
+            "mensaje_chatbot": ""  # Se llenará más adelante cuando el chatbot responda
+        }
+
+        # Actualizar la conversación activa del cliente con la nueva interacción
+        self.db.clientes.update_one(
+            {"celular": celular, "conversaciones.estado": "activa"},
+            {
+                "$push": {
+                    "conversaciones.$.interacciones": nueva_interaccion
+                },
+                "$set": {"conversaciones.$.ultima_interaccion": datetime.now(self.lima_tz).astimezone(pytz.utc)}
+            },
+            upsert=False
+        )
+        print(f"Nueva interacción creada para el cliente con celular {celular}.") 
+
+
     def hay_conversacion_activa(self, celular):
         """Verifica si hay una conversación activa para el cliente usando el número de celular."""
         cliente = self.db.clientes.find_one({"celular": celular})

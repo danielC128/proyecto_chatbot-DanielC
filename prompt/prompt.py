@@ -51,18 +51,18 @@ def prompt_cliente_nombre(cliente, response_message):
 def prompt_lead_estado(lead):
 
     return f""""
-        Analiza el siguiente lead y clasifícalo en uno de los siguientes estados fijos. Genera un mensaje breve y cálido para el cliente, como en una conversación de WhatsApp entre dos personas. Si el cliente ha indicado que no está interesado, clasifícalo como "no interesado", pero en este caso, genera un mensaje más cauteloso y negociador, preguntando amablemente por qué no está interesado o si es por temas como el precio.
+        Analiza el siguiente lead y clasifícalo en uno de los siguientes estados fijos. Genera un mensaje breve y cálido para el cliente, como en una conversación de WhatsApp entre dos personas. Personaliza el mensaje considerando el estado del lead, el número de intentos de contacto y la fecha de la última actividad para darle un tono más humano y cercano. Si el cliente ha indicado que no está interesado, clasifícalo como "no interesado" y utiliza un enfoque cauteloso y negociador para explorar las razones de su desinterés, preguntando amablemente si es por temas como el precio u otros motivos.
 
         Si el lead tiene una campaña asociada, menciona la campaña en el mensaje para brindar contexto al cliente. Los estados son:
 
-        - "pendiente de contacto": el cliente fue contactado en un horario no adecuado o aún no ha respondido y debe devolver la llamada.
+        - "no contesta": el cliente fue contactado en un horario no adecuado o aún no ha respondido y debe devolver la llamada.
         - "seguimiento": el cliente tiene dudas, pero aún no define una decisión concreta.
-        - "interesados": el cliente muestra interés en los servicios y solicita información como disponibilidad, ubicación, etc.
+        - "interesado": el cliente muestra interés en los servicios y solicita información como disponibilidad, ubicación, etc.
         - "promesas de pago": el cliente ha definido una fecha libre para asistir y se ha comprometido a realizar el pago hoy o al día siguiente.
         - "cita agendada": el cliente ya ha pagado y tiene cita confirmada.
         - "no interesado": el cliente ha indicado que no está interesado. En este caso, genera un mensaje negociador y cuidadoso para explorar las razones de su desinterés, como si el precio fuera un factor o si existen otras preocupaciones.
 
-        Usa los datos del lead a continuación para realizar la clasificación y generar el mensaje (si aplica):
+        Usa los datos del lead a continuación para realizar la clasificación y generar el mensaje:
 
         - ID del Lead: {lead["Record Id"]}
         - Nombre del Lead: {lead["Lead Name"]}
@@ -76,6 +76,8 @@ def prompt_lead_estado(lead):
         - Fecha de Creación: {lead["Fecha creacion"]}
         - Campaña Asociada: {lead["Campaing Name"]}
         - Canal: {lead["Canal Lead"]}
+
+
 
         Devuelve el siguiente resultado en el formato: "estado del cliente" - "mensaje personalizado" (si hay mensaje).
     """
@@ -436,8 +438,21 @@ def prompt_intenciones(fecha_actual):
 
     5) **Cliente envía su nombre**: Selecciona esta opción cuando el cliente envíe su nombre en la conversación. **Incluye el nombre recibido junto al número de la opción** (por ejemplo, `5) Daniel Rivas`) para poder continuar con el flujo normal sin volver a solicitar su nombre.
 
-    6) **Cliente no muestra interés**: Selecciona esta opción cuando el cliente expresa que no está interesado en los servicios directa o indirectamente. Si el cliente menciona una razón específica (por ejemplo, el cliente considera que los precios son muy caros, etc), incluye esa razón muy bien detallada hasta donde puedas junto al número de la opción en el siguiente formato: `6) causa específica` si es que encuentras una causa del no interes, analiza toda la conversacion para eso.
-    
+
+    6) **Cliente no muestra interés**: Selecciona esta opción cuando el cliente expresa que no está interesado en los servicios directa o indirectamente. Si el cliente menciona una razón específica para su falta de interés (por ejemplo, precios altos o ubicación), clasifica esta razón en una de las siguientes categorías y devuelve el formato `6) categoría de causa - causa específica`, basándote en toda la conversación:
+
+        - **Precio**: El cliente considera que el servicio es muy caro o que los precios son elevados.
+        - **Ubicación**: El cliente menciona que la ubicación no le resulta conveniente.
+        - **Horarios**: El cliente encuentra inconvenientes con los horarios disponibles.
+        - **Preferencias**: El cliente prefiere otros servicios o tiene expectativas diferentes.
+        - **Otros**: Para razones que no se ajusten a las categorías anteriores.
+
+    **Ejemplos de respuesta**:
+        - Cliente: "No puedo pagar ese monto ahora." → Respuesta: `6) Precio - No puedo pagar ese monto ahora.`
+        - Cliente: "El lugar me queda lejos." → Respuesta: `6) Ubicación - El lugar me queda lejos.`
+
+        RESPONDE EN ESTE FORMATO PARA ESTA OPCIÓN: `6) categoría de causa - causa específica`. SIEMPRE ESTE FORMATO PARA ESTA OPCION. en caso no encuentres una causa devuelve `6) Otros - causa específica/detalle de no interes.` e intenta extraer la causa de no interes.
+        
     **Responde solo con el número de la opción correspondiente y, si aplica, incluye la fecha o fecha y hora exacta en el formato solicitado, sin omisiones ni errores de día**. **La respuesta debe siempre basarse en {fecha_actual} y {día_actual} para calcular días relativos** como "lunes que viene" y debe ser precisa en cada interpretación analiza la conversación muy bien para esto.
 
 

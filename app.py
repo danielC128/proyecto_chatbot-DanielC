@@ -20,7 +20,7 @@ openai = OpenAIManager()
 calendar = GoogleCalendarManager()
 dbMongoManager = DataBaseMongoDBManager()
 dbMySQLManager = DataBaseMySQLManager()
-leaderManager = LeadManager("leads/Leads_2024_10_25.csv")
+leaderManager = LeadManager("leads/Leads_Prueba.csv")
 #culqi = CulqiManager()
 
 # Diccionario para almacenar temporizadores activos por cliente
@@ -74,6 +74,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
     if intencion_list[0] == "1":
         nuevo_estado = 'seguimiento'
         if es_transicion_valida(estado_actual, nuevo_estado):
+            cliente_mysql["estado"] = 'seguimiento'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
@@ -81,6 +82,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
     elif intencion_list[0] == "2":
         nuevo_estado = 'interesado'
         if es_transicion_valida(estado_actual, nuevo_estado):
+            cliente_mysql["estado"] = 'interesado'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)        
         print("Fecha de la cita:", intencion_list[1].strip())
         horarios_disponibles = calendar.listar_horarios_disponibles(intencion_list[1].strip())
@@ -89,6 +91,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
     elif intencion_list[0] == "3":
         nuevo_estado = 'promesas de pago'   
         if es_transicion_valida(estado_actual, nuevo_estado):
+            cliente_mysql["estado"] = 'promesas de pago'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")             
@@ -110,12 +113,15 @@ def enviar_respuesta(cliente, cliente_nuevo):
     elif intencion_list[0] == "4":
         # genero link de pago con culqui
         link_pago = "https://culqi.com"
-        response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history)
+        
         nuevo_estado = 'promesas de pago'   
         if es_transicion_valida(estado_actual, nuevo_estado):
+            cliente_mysql["estado"] = 'promesas de pago'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
+        response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history)
+
     elif intencion_list[0] == "5":
         cliente["nombre"] = intencion_list[1].strip()
         cliente_mysql["nombre"] = intencion_list[1].strip()
@@ -123,9 +129,12 @@ def enviar_respuesta(cliente, cliente_nuevo):
         #dbMySQLManager.
         response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
     elif intencion_list[0] == "6":
-        print("Causa de no interes : ", intencion_list[1].strip())
+        categoria = intencion_list[1].split('-')[0].strip()
+        detalle = intencion_list[1].split('-')[1].strip()
+        print("Causa de no interes : ", categoria)
         if es_transicion_valida(estado_actual, 'no interesado'):
-            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, 'no interesado')
+            cliente_mysql["estado"] = 'no interesado'
+            dbMySQLManager.actualizar_estado_cliente_no_interes(cliente_id_mysql, 'no interesado', categoria, detalle)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a no interesado.")
         response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
@@ -195,7 +204,7 @@ def whatsapp_bot():
 @app.route('/iniciar-conversacion-leads', methods=['POST'])
 def iniciar_conversacion_leads():
     while True:
-        print("Iniciando conversación con leeds...")
+        print("Iniciando conversación con leads...")
         # Obtener los leeds de la base de datos
         leeds = leaderManager.get_unanalyzed_leads(limit=10)
         for lead in leeds:
@@ -205,7 +214,7 @@ def iniciar_conversacion_leads():
             cliente = dbMongoManager.obtener_cliente_por_celular(lead["Mobile"])
             if not cliente:
                 # Si el cliente no existe, crear un nuevo cliente
-                cliente = dbMongoManager.crear_cliente(lead["Record Id"],lead["Lead Name"],lead["Mobile"])
+                cliente = dbMongoManager.crear_cliente(lead["Lead Name"],lead["Mobile"],lead["Record Id"])
                 # Crear cliente en MySQL
                 cliente_id_mysql = dbMySQLManager.insertar_cliente(
                     documento_identidad=None,
@@ -264,6 +273,8 @@ def iniciar_conversacion_leads():
                     notas="Lead generado automáticamente"
                 )
 
+            #creamos la interaccion en mongo
+            dbMongoManager.crear_nueva_interaccion_vacia(lead["Mobile"])
 
             # Obtener el número de teléfono móvil del lead
             mobile = lead["Mobile"]
@@ -284,7 +295,6 @@ def iniciar_conversacion_leads():
             dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())            
             print("Estado del lead:", estado_lead)
             print("Mensaje de respuesta:", response_message)
-        #print("Todos los leads:", leeds)
         time.sleep(86400)
 
 
@@ -397,6 +407,8 @@ def es_transicion_valida(estado_actual, nuevo_estado):
         'no interesado': 0,
         'inactivo': 0
     }
+    if estado_actual== 'no interesado' and nuevo_estado == 'no interesado':
+        return True
 
     if nuevo_estado == estado_actual:
         return False  # No hay cambio de estado
@@ -408,6 +420,10 @@ def es_transicion_valida(estado_actual, nuevo_estado):
     # Permitir transiciones específicas desde 'finalizado' a ciertos estados
     if estado_actual == 'finalizado' and nuevo_estado in ['seguimiento', 'interesado']:
         return True  # Permitir volver a 'seguimiento' o 'interesado' desde 'finalizado'
+
+    # Permitir transiciones a 'no interesado' o 'inactivo' solo desde 'seguimiento' o 'interesado'
+    if estado_actual in ['seguimiento', 'interesado'] and nuevo_estado in ['no interesado', 'inactivo']:
+        return True  # Permitir cambiar a 'no interesado' o 'inactivo' desde 'seguimiento' o 'interesado'
 
     return False  # No permitir otras transiciones
 
@@ -504,12 +520,12 @@ def culqi_webhook():
 
 if __name__ == '__main__':
     # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
-    #threading.Thread(target=iniciar_conversacion_leads).start()
+    threading.Thread(target=iniciar_conversacion_leads).start()
     # Iniciar el hilo en segundo plano para verificar conversaciones inactivas
     #threading.Thread(target=verificar_conversaciones_inactivas).start()    
     # Iniciar el hilo en segundo plano para limpiar_citas_no_confirmadas
     #threading.Thread(target=limpiar_citas_no_confirmadas).start()     
 
-    threading.Thread(target=verificar_estados_clientes).start()
+    #threading.Thread(target=verificar_estados_clientes).start()
     # Iniciar la aplicación Flask
     app.run(debug=True, port=5000)

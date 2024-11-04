@@ -19,25 +19,38 @@ class GoogleCalendarManager:
             creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 
         if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file("client_secret_app_escritorio_oauth.json", SCOPES)
-                #creds = flow.run_local_server(port=0)
-                flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
-                auth_url, _ = flow.authorization_url(prompt='consent')
-                # Imprime la URL de autenticación para abrirla en el navegador local
-                print(f"Por favor, abre este enlace en tu navegador: {auth_url}")
-                
-                # Después de autenticarte, obtén el código de autorización
-                code = input('Introduce el código de autorización: ')
-                flow.fetch_token(code=code)
-                creds = flow.credentials
-            # Save the credentials for the next run
-            with open("token.json", "w") as token:
-                token.write(creds.to_json())
+            creds = self._get_new_credentials(creds)
 
         return build("calendar", "v3", credentials=creds)
+
+    def _get_new_credentials(self, creds):
+        """Reautenticación si el token ha expirado o es inválido."""
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                print("Token expirado o revocado, se requiere nueva autenticación.")
+                creds = self._run_authentication_flow()
+        else:
+            creds = self._run_authentication_flow()
+        
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
+        
+        return creds
+
+    def _run_authentication_flow(self):
+        """Inicia el flujo de autenticación para obtener nuevas credenciales."""
+        flow = InstalledAppFlow.from_client_secrets_file("client_secret_app_escritorio_oauth.json", SCOPES)
+        flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+        auth_url, _ = flow.authorization_url(prompt='consent')
+        print(f"Por favor, abre este enlace en tu navegador: {auth_url}")
+        
+        # Después de autenticarte, obtén el código de autorización
+        code = input('Introduce el código de autorización: ')
+        flow.fetch_token(code=code)
+        
+        return flow.credentials
 
     def listar_horarios_disponibles(self, fecha, max_results=10):
             # Definir horarios de trabajo
