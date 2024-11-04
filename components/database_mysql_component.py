@@ -9,10 +9,10 @@ class DataBaseMySQLManager:
     def _connect(self):
         try:
             connection = mysql.connector.connect(
-                host='localhost',
+                host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
                 database='chatbot_db',
-                user='danielrp551',
-                password='26deJULIO@'
+                user='admin',
+                password='zQumSnUd9MNtjcsK'
             )
             if connection.is_connected():
                 print("Conectado a MySQL")

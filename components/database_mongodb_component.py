@@ -8,7 +8,8 @@ class DataBaseMongoDBManager:
         self.lima_tz = pytz.timezone("America/Lima")  # Definir la zona horaria de Lima
 
     def _connect(self):
-        client = MongoClient('mongodb://localhost:27017/')
+        uri = "mongodb+srv://admin:zQumSnUd9MNtjcsK@cluster0.mw4xl.mongodb.net/?retryWrites=true&w=majority"
+        client = MongoClient(uri)
         return client.chatbot_db
 
     def crear_cliente(self, nombre, celular, id=None, email=""):
