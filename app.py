@@ -518,6 +518,10 @@ def culqi_webhook():
         print("Error en culqi_webhook:", e)
         return 'Error interno del servidor', 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return '', 200
+
 if __name__ == '__main__':
     # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
     threading.Thread(target=iniciar_conversacion_leads).start()
