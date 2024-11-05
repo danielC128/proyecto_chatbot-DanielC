@@ -190,7 +190,7 @@ def whatsapp_bot():
             dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)            
 
         # Crear un nuevo temporizador de 60 segundos antes de responder
-        timer = threading.Timer(10, enviar_respuesta, args=[cliente,cliente_nuevo])
+        timer = threading.Timer(2, enviar_respuesta, args=[cliente,cliente_nuevo])
         timers[celular] = timer
         timer.start()
         print("Nuevo temporizador iniciado para el cliente:", sender)
