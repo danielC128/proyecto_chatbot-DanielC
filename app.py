@@ -37,7 +37,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
         nombre=cliente["nombre"],
         apellido="",
         celular=cliente["celular"],
-        email=cliente.get("email", "")
+        email= cliente.get("email", None) or None
     )    
     # Obtener cliente por id
     cliente_mysql = dbMySQLManager.obtener_cliente(cliente_id_mysql)
