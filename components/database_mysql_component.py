@@ -9,10 +9,14 @@ class DataBaseMySQLManager:
     def _connect(self):
         try:
             connection = mysql.connector.connect(
-                host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                host='localhost',
+                user='danielrp551',
                 database='chatbot_db',
-                user='admin',
-                password='zQumSnUd9MNtjcsK'
+                password='26deJULIO@'
+                #host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                #database='chatbot_db',
+                #user='admin',
+                #password='zQumSnUd9MNtjcsK'
             )
             if connection.is_connected():
                 print("Conectado a MySQL")
@@ -60,6 +64,15 @@ class DataBaseMySQLManager:
         query = """INSERT INTO leads (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
         cursor.execute(query, (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas))
+        self.connection.commit()
+        return cursor.lastrowid
+    
+    def insertar_lead_zoho(self, cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña=None, canal_lead=None, estado_lead="nuevo", notas=None, tipo_lead=None):
+        """Inserta un nuevo lead para un cliente en la tabla de leads."""
+        cursor = self.connection.cursor()
+        query = """INSERT INTO leads (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas,tipo)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s)"""
+        cursor.execute(query, (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas,tipo_lead))
         self.connection.commit()
         return cursor.lastrowid
 
@@ -234,3 +247,10 @@ class DataBaseMySQLManager:
         estado = cursor.fetchone()[0]
         cursor.close()
         return estado
+    
+    def actualizar_nombre_cliente(self, cliente_id, nombre):
+        cursor = self.connection.cursor()
+        sql = "UPDATE clientes SET nombre = %s WHERE cliente_id = %s"
+        cursor.execute(sql, (nombre, cliente_id))
+        self.connection.commit()
+        cursor.close()
