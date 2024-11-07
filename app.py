@@ -630,9 +630,6 @@ def culqi_webhook():
 def health_check():
     return '', 200
 
-@app.before_first_request
-def activate_threads():
-    start_background_threads()
 
 def start_background_threads():
     # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
