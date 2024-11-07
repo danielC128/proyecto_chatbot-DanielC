@@ -644,6 +644,8 @@ def start_background_threads():
     # Iniciar otro hilo, si es necesario
     # threading.Thread(target=verificar_estados_clientes).start()
 
+start_background_threads()
+
 if __name__ == '__main__':
     # Iniciar la aplicación Flask
     app.run(host='0.0.0.0',port=5000)
