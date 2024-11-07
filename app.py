@@ -329,7 +329,8 @@ def iniciar_conversacion_leads_zoho():
                     nombre=lead.get("First_Name", ""),
                     apellido=lead.get("Last_Name", ""),
                     celular=lead["Mobile"],
-                    email=lead.get("Email", None)
+                    email=lead.get("Email", None),
+                    estado="contactado"
                 )
                 print("Cliente creado:", cliente)
 
@@ -378,7 +379,7 @@ def iniciar_conversacion_leads_zoho():
                     lead_source=lead.get("Lead_Source", "Desconocido"),
                     campaña=lead.get("Campaing_Name", ""),
                     canal_lead=lead.get("Canal_Lead", "Desconocido"),
-                    estado_lead=lead.get("Lead_Status", "nuevo"),
+                    estado_lead=lead.get("Lead_Status", "nuevo").lower(),
                     notas="Lead generado automáticamente",
                     tipo_lead= lead["Tipo_de_Lead"]
                 )
@@ -396,7 +397,7 @@ def iniciar_conversacion_leads_zoho():
             #zoho_manager.marcar_lead_como_analizado(lead["id"])  # Ejemplo de función para actualizar estado en Zoho
 
             # Actualizar estado en MySQL y MongoDB
-            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
+            #dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
             dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
             dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
             print("Estado del lead:", estado_lead)

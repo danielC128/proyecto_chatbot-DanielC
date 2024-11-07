@@ -37,13 +37,13 @@ class DataBaseMySQLManager:
         """Verifica si un cliente ya existe en la base de datos usando el número de celular."""
         return self.obtener_id_cliente_por_celular(celular) is not None
 
-    def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email):
+    def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email,estado="activo"):
         """Inserta un nuevo cliente en la tabla de clientes si no existe ya."""
         if not self.existe_cliente_por_celular(celular):
             cursor = self.connection.cursor()
-            query = """INSERT INTO clientes (documento_identidad, tipo_documento, nombre, apellido, celular, email)
-                       VALUES (%s, %s, %s, %s, %s, %s)"""
-            cursor.execute(query, (documento_identidad, tipo_documento, nombre, apellido, celular, email))
+            query = """INSERT INTO clientes (documento_identidad, tipo_documento, nombre, apellido, celular, email,estado)
+                       VALUES (%s, %s, %s, %s, %s, %s,%s)"""
+            cursor.execute(query, (documento_identidad, tipo_documento, nombre, apellido, celular, email,estado))
             self.connection.commit()
             print("Cliente insertado en MySQL.")
             return cursor.lastrowid
