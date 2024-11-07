@@ -343,19 +343,6 @@ def iniciar_conversacion_leads_zoho():
                     resultado=None,
                     estado_conversacion="activa"
                 )
-
-                # Crear un registro de lead en MySQL
-                lead_id_mysql = dbMySQLManager.insertar_lead_zoho(
-                    cliente_id=cliente_id_mysql,
-                    fecha_contacto=datetime.now(),
-                    prioridad_lead=lead.get("Prioridad_Lead", 1),
-                    lead_source=lead.get("Lead_Source", "Desconocido"),
-                    campaña=lead.get("Campaing_Name", ""),
-                    canal_lead=lead.get("Canal_Lead", "Desconocido"),
-                    estado_lead=lead.get("Lead_Status", "nuevo"),
-                    notas="Lead generado automáticamente",
-                    tipo_lead= lead["Tipo_de_Lead"]
-                )
             else:
                 print("Cliente encontrado:", cliente)
                 cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(lead["Mobile"])
@@ -371,18 +358,19 @@ def iniciar_conversacion_leads_zoho():
                         estado_conversacion="activa"
                     )
 
+
                 # Registrar el lead en MySQL
-                lead_id_mysql = dbMySQLManager.insertar_lead_zoho(
-                    cliente_id=cliente_id_mysql,
-                    fecha_contacto=datetime.now(),
-                    prioridad_lead=lead.get("Prioridad_Lead", 1),
-                    lead_source=lead.get("Lead_Source", "Desconocido"),
-                    campaña=lead.get("Campaing_Name", ""),
-                    canal_lead=lead.get("Canal_Lead", "Desconocido"),
-                    estado_lead=lead.get("Lead_Status", "nuevo").lower(),
-                    notas="Lead generado automáticamente",
-                    tipo_lead= lead["Tipo_de_Lead"]
-                )
+            lead_id_mysql = dbMySQLManager.insertar_lead_zoho(
+                cliente_id=cliente_id_mysql,
+                fecha_contacto=datetime.now(),
+                prioridad_lead=lead.get("Prioridad_Lead", 1),
+                lead_source=lead.get("Lead_Source", "Desconocido"),
+                campaña=lead.get("Campaing_Name", ""),
+                canal_lead=lead.get("Canal_Lead", "Desconocido"),
+                estado_lead=lead.get("Lead_Status", "nuevo").lower(),
+                notas="Lead generado automáticamente",
+                tipo_lead= lead["Tipo_de_Lead"]
+            )        
 
             # Crear una interacción en MongoDB
             dbMongoManager.crear_nueva_interaccion_vacia(lead["Mobile"])
