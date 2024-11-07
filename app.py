@@ -630,14 +630,20 @@ def culqi_webhook():
 def health_check():
     return '', 200
 
-if __name__ == '__main__':
-    # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
-    #threading.Thread(target=iniciar_conversacion_leads).start()
-    # Iniciar el hilo en segundo plano para verificar conversaciones inactivas
-    threading.Thread(target=iniciar_conversacion_leads_zoho).start()    
-    # Iniciar el hilo en segundo plano para limpiar_citas_no_confirmadas
-    #threading.Thread(target=limpiar_citas_no_confirmadas).start()     
+@app.before_first_request
+def activate_threads():
+    start_background_threads()
 
-    #threading.Thread(target=verificar_estados_clientes).start()
+def start_background_threads():
+    # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
+    # threading.Thread(target=iniciar_conversacion_leads).start()
+    # Iniciar el hilo en segundo plano para verificar conversaciones inactivas
+    threading.Thread(target=iniciar_conversacion_leads_zoho).start()
+    # Iniciar el hilo en segundo plano para limpiar citas no confirmadas
+    # threading.Thread(target=limpiar_citas_no_confirmadas).start()
+    # Iniciar otro hilo, si es necesario
+    # threading.Thread(target=verificar_estados_clientes).start()
+
+if __name__ == '__main__':
     # Iniciar la aplicación Flask
     app.run(host='0.0.0.0',port=5000)
