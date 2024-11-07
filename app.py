@@ -1,5 +1,6 @@
 import threading
 import time
+import os
 import hmac
 import hashlib
 from datetime import datetime, timedelta
@@ -307,92 +308,100 @@ import time
 
 @app.route('/iniciar-conversacion-leads-zoho', methods=['POST'])
 def iniciar_conversacion_leads_zoho():
-    while True:
-        print("Iniciando conversación con leads desde Zoho...")
+    if os.path.exists("/tmp/iniciar_conversacion.lock"):
+        print("El hilo de conversación ya está en ejecución. Saltando inicialización.")
+        return
+    with open("/tmp/iniciar_conversacion.lock", "w") as f:
+        f.write("running")
 
-        # Obtener leads desde ZohoCRMManager
-        leads = zoho_manager.obtener_todos_los_leads(limit=10)  # Llama al método con un límite de 10 leads
-        for lead in leads:
-            if not lead.get("Mobile"):
-                continue
+    try:
+        while True:
+            print("Iniciando conversación con leads desde Zoho...")
 
-            # Buscar en la base de datos MongoDB usando el número de teléfono del lead
-            cliente = dbMongoManager.obtener_cliente_por_celular(lead["Mobile"])
-            if not cliente:
-                # Si el cliente no existe en MongoDB, crear nuevo cliente
-                cliente = dbMongoManager.crear_cliente(lead.get("First_Name", "") + " " + lead.get("Last_Name", ""), lead["Mobile"], lead["id"])
+            # Obtener leads desde ZohoCRMManager
+            leads = zoho_manager.obtener_todos_los_leads(limit=10)  # Llama al método con un límite de 10 leads
+            for lead in leads:
+                if not lead.get("Mobile"):
+                    continue
 
-                # Crear cliente en MySQL
-                cliente_id_mysql = dbMySQLManager.insertar_cliente(
-                    documento_identidad=None,
-                    tipo_documento=None,
-                    nombre=lead.get("First_Name", ""),
-                    apellido=lead.get("Last_Name", ""),
-                    celular=lead["Mobile"],
-                    email=lead.get("Email", None),
-                    estado="contactado"
-                )
-                print("Cliente creado:", cliente)
+                # Buscar en la base de datos MongoDB usando el número de teléfono del lead
+                cliente = dbMongoManager.obtener_cliente_por_celular(lead["Mobile"])
+                if not cliente:
+                    # Si el cliente no existe en MongoDB, crear nuevo cliente
+                    cliente = dbMongoManager.crear_cliente(lead.get("First_Name", "") + " " + lead.get("Last_Name", ""), lead["Mobile"], lead["id"])
 
-                # Crear conversación activa en MongoDB y MySQL
-                dbMongoManager.crear_conversacion_activa(lead["Mobile"])
-                conversacion_id_mysql = dbMySQLManager.insertar_conversacion(
-                    cliente_id=cliente_id_mysql,
-                    mensaje="Inicio de conversación por lead",
-                    tipo_conversacion="activa",
-                    resultado=None,
-                    estado_conversacion="activa"
-                )
-            else:
-                print("Cliente encontrado:", cliente)
-                cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(lead["Mobile"])
+                    # Crear cliente en MySQL
+                    cliente_id_mysql = dbMySQLManager.insertar_cliente(
+                        documento_identidad=None,
+                        tipo_documento=None,
+                        nombre=lead.get("First_Name", ""),
+                        apellido=lead.get("Last_Name", ""),
+                        celular=lead["Mobile"],
+                        email=lead.get("Email", None),
+                        estado="contactado"
+                    )
+                    print("Cliente creado:", cliente)
 
-                # Verificar si ya existe una conversación activa en MySQL
-                if not dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql):
+                    # Crear conversación activa en MongoDB y MySQL
                     dbMongoManager.crear_conversacion_activa(lead["Mobile"])
-                    dbMySQLManager.insertar_conversacion(
+                    conversacion_id_mysql = dbMySQLManager.insertar_conversacion(
                         cliente_id=cliente_id_mysql,
                         mensaje="Inicio de conversación por lead",
                         tipo_conversacion="activa",
                         resultado=None,
                         estado_conversacion="activa"
                     )
+                else:
+                    print("Cliente encontrado:", cliente)
+                    cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(lead["Mobile"])
+
+                    # Verificar si ya existe una conversación activa en MySQL
+                    if not dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql):
+                        dbMongoManager.crear_conversacion_activa(lead["Mobile"])
+                        dbMySQLManager.insertar_conversacion(
+                            cliente_id=cliente_id_mysql,
+                            mensaje="Inicio de conversación por lead",
+                            tipo_conversacion="activa",
+                            resultado=None,
+                            estado_conversacion="activa"
+                        )
 
 
-                # Registrar el lead en MySQL
-            lead_id_mysql = dbMySQLManager.insertar_lead_zoho(
-                cliente_id=cliente_id_mysql,
-                fecha_contacto=datetime.now(),
-                prioridad_lead=lead.get("Prioridad_Lead", 1),
-                lead_source=lead.get("Lead_Source", "Desconocido"),
-                campaña=lead.get("Campaing_Name", ""),
-                canal_lead=lead.get("Canal_Lead", "Desconocido"),
-                estado_lead=lead.get("Lead_Status", "nuevo").lower(),
-                notas="Lead generado automáticamente",
-                tipo_lead= lead["Tipo_de_Lead"]
-            )        
+                    # Registrar el lead en MySQL
+                lead_id_mysql = dbMySQLManager.insertar_lead_zoho(
+                    cliente_id=cliente_id_mysql,
+                    fecha_contacto=datetime.now(),
+                    prioridad_lead=lead.get("Prioridad_Lead", 1),
+                    lead_source=lead.get("Lead_Source", "Desconocido"),
+                    campaña=lead.get("Campaing_Name", ""),
+                    canal_lead=lead.get("Canal_Lead", "Desconocido"),
+                    estado_lead=lead.get("Lead_Status", "nuevo").lower(),
+                    notas="Lead generado automáticamente",
+                    tipo_lead= lead["Tipo_de_Lead"]
+                )        
 
-            # Crear una interacción en MongoDB
-            dbMongoManager.crear_nueva_interaccion_vacia(lead["Mobile"])
+                # Crear una interacción en MongoDB
+                dbMongoManager.crear_nueva_interaccion_vacia(lead["Mobile"])
 
-            # Enviar mensaje al lead usando Twilio
-            mobile = lead["Mobile"]
-            print("Enviando mensaje a:", mobile)
-            resultado_lead = openai.consultaLeadZoho(lead)
-            estado_lead = resultado_lead.split("-")[0].strip().replace('"','')
-            response_message = resultado_lead.split("-")[1].strip().replace('"','')
-            #twilio.send_message(mobile, response_message)
-            #zoho_manager.marcar_lead_como_analizado(lead["id"])  # Ejemplo de función para actualizar estado en Zoho
+                # Enviar mensaje al lead usando Twilio
+                mobile = lead["Mobile"]
+                print("Enviando mensaje a:", mobile)
+                resultado_lead = openai.consultaLeadZoho(lead)
+                estado_lead = resultado_lead.split("-")[0].strip().replace('"','')
+                response_message = resultado_lead.split("-")[1].strip().replace('"','')
+                #twilio.send_message(mobile, response_message)
+                #zoho_manager.marcar_lead_como_analizado(lead["id"])  # Ejemplo de función para actualizar estado en Zoho
 
-            # Actualizar estado en MySQL y MongoDB
-            #dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
-            dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
-            dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
-            print("Estado del lead:", estado_lead)
-            print("Mensaje de respuesta:", response_message)
+                # Actualizar estado en MySQL y MongoDB
+                #dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
+                dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
+                dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
+                print("Estado del lead:", estado_lead)
+                print("Mensaje de respuesta:", response_message)
 
-        time.sleep(86400)  # Espera 24 horas antes de procesar de nuevo
-
+            time.sleep(86400)  # Espera 24 horas antes de procesar de nuevo
+    finally:
+        os.remove("/tmp/iniciar_conversacion.lock")
 
 def verificar_estados_clientes():
     while True:
