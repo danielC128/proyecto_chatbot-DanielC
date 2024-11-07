@@ -632,7 +632,7 @@ def health_check():
 
 if __name__ == '__main__':
     # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
-    threading.Thread(target=iniciar_conversacion_leads).start()
+    #threading.Thread(target=iniciar_conversacion_leads).start()
     # Iniciar el hilo en segundo plano para verificar conversaciones inactivas
     threading.Thread(target=iniciar_conversacion_leads_zoho).start()    
     # Iniciar el hilo en segundo plano para limpiar_citas_no_confirmadas
