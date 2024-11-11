@@ -12,6 +12,7 @@ from components.database_mongodb_component import DataBaseMongoDBManager
 from components.database_mysql_component import DataBaseMySQLManager
 from components.leader_csv_component import LeadManager
 from components.zoho_component import ZohoCRMManager
+from helpers.helpers import format_number
 from api_keys.api_keys import client_id_zoho, client_secret_zoho, refresh_token_zoho
 #from components.payments_component import CulqiManager
 
@@ -330,7 +331,7 @@ def iniciar_conversacion_leads_zoho():
                     continue
 
                 # Buscar en la base de datos MongoDB usando el número de teléfono del lead
-                cliente = dbMongoManager.obtener_cliente_por_celular(lead["Mobile"])
+                cliente = dbMongoManager.obtener_cliente_por_celular(format_number(lead["Mobile"]))
                 if not cliente:
                     # Si el cliente no existe en MongoDB, crear nuevo cliente
                     cliente = dbMongoManager.crear_cliente(lead.get("First_Name", "") + " " + lead.get("Last_Name", ""), lead["Mobile"], lead["id"])

@@ -1,6 +1,18 @@
 import re
 import datetime
 
+def format_number(numero_celular):
+    # Verificar si el número ya comienza con "+51"
+    if numero_celular.startswith("+51"):
+        return numero_celular
+    # Si el número comienza con "51" pero sin el "+", agregar el "+"
+    elif numero_celular.startswith("51"):
+        return f"+{numero_celular}"
+    # Si el número no comienza con "51" ni "+51", agregar "+51" al inicio
+    else:
+        return f"+51{numero_celular}"
+
+
 def formatear_horarios_disponibles(horarios):
     return " | ".join(horarios)
 
