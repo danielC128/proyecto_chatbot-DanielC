@@ -334,7 +334,7 @@ def iniciar_conversacion_leads_zoho():
                 cliente = dbMongoManager.obtener_cliente_por_celular(format_number(lead["Mobile"]))
                 if not cliente:
                     # Si el cliente no existe en MongoDB, crear nuevo cliente
-                    cliente = dbMongoManager.crear_cliente(lead.get("First_Name", "") + " " + lead.get("Last_Name", ""), lead["Mobile"], lead["id"])
+                    cliente = dbMongoManager.crear_cliente(lead.get("First_Name", "") + " " + lead.get("Last_Name", ""), format_number(lead["Mobile"]), lead["id"])
 
                     # Crear cliente en MySQL
                     cliente_id_mysql = dbMySQLManager.insertar_cliente(
@@ -342,14 +342,14 @@ def iniciar_conversacion_leads_zoho():
                         tipo_documento=None,
                         nombre=lead.get("First_Name", ""),
                         apellido=lead.get("Last_Name", ""),
-                        celular=lead["Mobile"],
+                        celular=format_number(lead["Mobile"]),
                         email=lead.get("Email", None),
                         estado="contactado"
                     )
                     print("Cliente creado:", cliente)
 
                     # Crear conversación activa en MongoDB y MySQL
-                    dbMongoManager.crear_conversacion_activa(lead["Mobile"])
+                    dbMongoManager.crear_conversacion_activa(format_number(lead["Mobile"]))
                     conversacion_id_mysql = dbMySQLManager.insertar_conversacion(
                         cliente_id=cliente_id_mysql,
                         mensaje="Inicio de conversación por lead",
@@ -359,11 +359,11 @@ def iniciar_conversacion_leads_zoho():
                     )
                 else:
                     print("Cliente encontrado:", cliente)
-                    cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(lead["Mobile"])
+                    cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(format_number(lead["Mobile"]))
 
                     # Verificar si ya existe una conversación activa en MySQL
                     if not dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql):
-                        dbMongoManager.crear_conversacion_activa(lead["Mobile"])
+                        dbMongoManager.crear_conversacion_activa(format_number(lead["Mobile"]))
                         dbMySQLManager.insertar_conversacion(
                             cliente_id=cliente_id_mysql,
                             mensaje="Inicio de conversación por lead",
@@ -387,10 +387,10 @@ def iniciar_conversacion_leads_zoho():
                 )        
 
                 # Crear una interacción en MongoDB
-                dbMongoManager.crear_nueva_interaccion_vacia(lead["Mobile"])
+                dbMongoManager.crear_nueva_interaccion_vacia(format_number(lead["Mobile"]))
 
                 # Enviar mensaje al lead usando Twilio
-                mobile = lead["Mobile"]
+                mobile = format_number(lead["Mobile"])
                 print("Enviando mensaje a:", mobile)
                 resultado_lead = openai.consultaLeadZoho(lead)
                 estado_lead = resultado_lead.split("-")[0].strip().replace('"','')
