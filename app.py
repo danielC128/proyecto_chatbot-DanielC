@@ -399,7 +399,7 @@ def iniciar_conversacion_leads_zoho():
 
                 # Actualizar estado en MySQL y MongoDB
                 #dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
-                dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, estado_lead.lower())
+                dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql,'contactado' )
                 dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
                 dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
                 print("Estado del lead:", estado_lead)
