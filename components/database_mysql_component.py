@@ -15,14 +15,14 @@ class DataBaseMySQLManager:
     def _connect(self):
         try:
             connection = mysql.connector.connect(
-                #host='localhost',
-                #user='danielrp551',
-                #database='chatbot_db',
-                #password='26deJULIO@'
-                host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                host='localhost',
+                user='danielrp551',
                 database='chatbot_db',
-                user='admin',
-                password='zQumSnUd9MNtjcsK'
+                password='26deJULIO@'
+                #host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                #database='chatbot_db',
+                #user='admin',
+                #password='zQumSnUd9MNtjcsK'
             )
             if connection.is_connected():
                 print("Conectado a MySQL")
@@ -284,5 +284,28 @@ class DataBaseMySQLManager:
         cursor = self.connection.cursor()
         sql = "UPDATE clientes SET nombre = %s WHERE cliente_id = %s"
         cursor.execute(sql, (nombre, cliente_id))
+        self.connection.commit()
+        cursor.close()
+
+    def actualizar_estado_historico_cliente(self, cliente_id, nuevo_estado):
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+
+        # Verificar si ya existe un registro en el histórico con el mismo estado para el cliente
+        query_check = "SELECT historico_id FROM historico WHERE cliente_id = %s AND estado = %s"
+        cursor.execute(query_check, (cliente_id, nuevo_estado))
+        result = cursor.fetchone()
+
+        if result:
+            # Si existe, actualizar la fecha_estado a la fecha y hora actual
+            query_update = "UPDATE historico SET fecha_estado = %s WHERE historico_id = %s"
+            cursor.execute(query_update, (datetime.now(), result[0]))
+            print(f"Fecha actualizada en el histórico para el estado '{nuevo_estado}' del cliente {cliente_id}.")
+        else:
+            # Si no existe, insertar un nuevo registro en el histórico
+            query_insert = "INSERT INTO historico (cliente_id, estado, fecha_estado) VALUES (%s, %s, %s)"
+            cursor.execute(query_insert, (cliente_id, nuevo_estado, datetime.now()))
+            print(f"Estado '{nuevo_estado}' añadido al histórico para el cliente {cliente_id}.")
+
         self.connection.commit()
         cursor.close()

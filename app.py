@@ -80,6 +80,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'seguimiento'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
+            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
         response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
@@ -87,7 +88,8 @@ def enviar_respuesta(cliente, cliente_nuevo):
         nuevo_estado = 'interesado'
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'interesado'
-            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)        
+            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)  
+            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)      
         print("Fecha de la cita:", intencion_list[1].strip())
         horarios_disponibles = calendar.listar_horarios_disponibles(intencion_list[1].strip())
         print("Horarios disponibles:", horarios_disponibles)
@@ -97,6 +99,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'promesas de pago'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
+            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")             
         print("Fecha y hora de la cita:", intencion_list[1].lstrip())
@@ -122,6 +125,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'promesas de pago'
             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
+            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
         response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history)
@@ -140,6 +144,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
         if es_transicion_valida(estado_actual, 'no interesado'):
             cliente_mysql["estado"] = 'no interesado'
             dbMySQLManager.actualizar_estado_cliente_no_interes(cliente_id_mysql, 'no interesado', categoria, detalle)
+            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, 'no interesado')
         else:
             print(f"No se actualiza el estado desde {estado_actual} a no interesado.")
         response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
@@ -394,6 +399,7 @@ def iniciar_conversacion_leads_zoho():
 
                 # Actualizar estado en MySQL y MongoDB
                 #dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
+                dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, estado_lead.lower())
                 dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
                 dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
                 print("Estado del lead:", estado_lead)
