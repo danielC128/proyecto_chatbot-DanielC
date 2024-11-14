@@ -3,6 +3,7 @@ import threading
 import time
 import os
 import hmac
+import re
 import hashlib
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
@@ -13,7 +14,7 @@ from components.database_mongodb_component import DataBaseMongoDBManager
 from components.database_mysql_component import DataBaseMySQLManager
 from components.leader_csv_component import LeadManager
 from components.zoho_component import ZohoCRMManager
-from helpers.helpers import format_number
+from helpers.helpers import format_number, extraer_json,json_a_lista
 from api_keys.api_keys import client_id_zoho, client_secret_zoho, refresh_token_zoho
 #from components.payments_component import CulqiManager
 
@@ -73,11 +74,16 @@ def enviar_respuesta(cliente, cliente_nuevo):
     # Hacemos un mapeo de intenciones para determinar si el chatbot necesita algo específico
     # como agendar, pagar, horarios disponibles
     intencion = openai.clasificar_intencion(conversation_actual, conversation_history)
+    print("Intención detectada antes extraer json:", intencion)
+    intencion = extraer_json(intencion)
     print("Intención detectada:", intencion)
     # Generamos un mensaje de respuesta
     print("Cliente mysql", cliente_mysql)
-    intencion_list = intencion.split(")")
-    if intencion_list[0] == "1":
+    #intencion_list = intencion.split(")")
+    intencion_list = json_a_lista(intencion)
+    print("Intencion lista: ", intencion_list)
+    if intencion_list[0] == 1:
+        print("Ingreso a la intencion 1")
         nuevo_estado = 'seguimiento'
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'seguimiento'
@@ -86,7 +92,8 @@ def enviar_respuesta(cliente, cliente_nuevo):
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
         response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
-    elif intencion_list[0] == "2":
+    elif intencion_list[0] == 2:
+        print("Ingreso a la intencion 2")
         nuevo_estado = 'interesado'
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'interesado'
@@ -96,7 +103,8 @@ def enviar_respuesta(cliente, cliente_nuevo):
         horarios_disponibles = calendar.listar_horarios_disponibles(intencion_list[1].strip())
         print("Horarios disponibles:", horarios_disponibles)
         response_message = openai.consultaHorarios(cliente_mysql,horarios_disponibles,conversation_actual,conversation_history,intencion_list[1])
-    elif intencion_list[0] == "3":
+    elif intencion_list[0] == 3:
+        print("Ingreso a la intencion 3")
         nuevo_estado = 'promesas de pago'   
         if es_transicion_valida(estado_actual, nuevo_estado):
             cliente_mysql["estado"] = 'promesas de pago'
@@ -119,7 +127,8 @@ def enviar_respuesta(cliente, cliente_nuevo):
             conversacion_id=conversacion_id_mysql
         )        
 
-    elif intencion_list[0] == "4":
+    elif intencion_list[0] == 4:
+        print("Ingreso a la intencion 4")
         # genero link de pago con culqui
         link_pago = "https://express.culqi.com/pago/HXHKR025JY"
         
@@ -132,24 +141,26 @@ def enviar_respuesta(cliente, cliente_nuevo):
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
         response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history)
 
-    elif intencion_list[0] == "5":
+    elif intencion_list[0] == 5:
+        print("Ingreso a la intencion 5")
         cliente["nombre"] = intencion_list[1].strip()
         cliente_mysql["nombre"] = intencion_list[1].strip()
         dbMongoManager.editar_cliente_por_celular(cliente["celular"], cliente["nombre"])
         dbMySQLManager.actualizar_nombre_cliente(cliente_id_mysql, cliente["nombre"])
         #dbMySQLManager.
         response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
-    elif intencion_list[0] == "6":
-        categoria = intencion_list[1].split('-')[0].strip()
-        detalle = intencion_list[1].split('-')[1].strip()
-        print("Causa de no interes : ", categoria)
-        if es_transicion_valida(estado_actual, 'no interesado'):
-            cliente_mysql["estado"] = 'no interesado'
-            dbMySQLManager.actualizar_estado_cliente_no_interes(cliente_id_mysql, 'no interesado', categoria, detalle)
-            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, 'no interesado')
-        else:
-            print(f"No se actualiza el estado desde {estado_actual} a no interesado.")
-        response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
+    elif intencion_list[0] == 6:
+        if len(intencion_list) > 2:
+            categoria = intencion_list[1].strip()
+            detalle = intencion_list[2].strip()
+            print("Causa de no interés:", categoria)
+            if es_transicion_valida(estado_actual, 'no interesado'):
+                cliente_mysql["estado"] = 'no interesado'
+                dbMySQLManager.actualizar_estado_cliente_no_interes(cliente_id_mysql, 'no interesado', categoria, detalle)
+                dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, 'no interesado')
+            else:
+                print(f"No se actualiza el estado desde {estado_actual} a no interesado.")
+            response_message = openai.consulta(cliente_mysql, conversation_actual, conversation_history)
 
     # Enviar respuesta al cliente
     if cliente["nombre"] == "":

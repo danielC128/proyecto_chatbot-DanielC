@@ -15,14 +15,14 @@ class DataBaseMySQLManager:
     def _connect(self):
         try:
             connection = mysql.connector.connect(
-                #host='localhost',
-                #user='danielrp551',
-                #database='chatbot_db',
-                #password='26deJULIO@'
-                host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                host='localhost',
+                user='danielrp551',
                 database='chatbot_db',
-                user='admin',
-                password='zQumSnUd9MNtjcsK'
+                password='26deJULIO@'
+                #host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                #database='chatbot_db',
+                #user='admin',
+                #password='zQumSnUd9MNtjcsK'
             )
             if connection.is_connected():
                 print("Conectado a MySQL")

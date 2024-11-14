@@ -630,6 +630,47 @@ def prompt_consulta():
 
     """
 
+def prompt_intencionesv2(fecha_actual):
+    fecha_obj = datetime.strptime(fecha_actual, "%Y-%m-%d")
+
+    # Obtener el día de la semana en español
+    día_actual = fecha_obj.strftime("%A")
+    return f"""
+    Asume el rol de un asesor del Instituto Facial y Capilar (IFC) en una conversación por WhatsApp. La fecha actual es {fecha_actual} y es {día_actual}. Con base en esta fecha y día, y considerando que estás en Lima, Perú, determina la opción necesaria para continuar el diálogo con el cliente, siguiendo estos criterios: 
+
+    1) **Dudas, consultas, otros**: Selecciona esta opción cuando el cliente tenga alguna duda, consulta o pregunta que no implique agendar una cita ni solicitar horarios específicos.
+
+    2) **Planear cita/obtener horarios libres**: Selecciona esta opción cuando el cliente pregunte por horarios disponibles para agendar una cita o si el chatbot considera apropiado sugerir una fecha/hora específica. **Es obligatorio incluir la fecha solicitada en el formato AAAA-MM-DD** (ejemplo: 2024-10-28) si esta opción es seleccionada.
+
+    - **Interpretación de fechas relativas**: Si el cliente menciona días relativos como "el lunes que viene" o "este viernes," calcula y devuelve la fecha exacta en Lima, Perú, tomando {fecha_actual} y {día_actual} como referencia.
+    - **Ejemplos precisos**:
+        - Si el cliente menciona "lunes que viene" y hoy es jueves, devuelve el próximo lunes en el formato JSON `{{ "intencion": 2, "detalle": "2024-10-28" }}`.
+        - Si el cliente menciona "este viernes" y hoy es lunes, devuelve el viernes de esta misma semana en el formato JSON `{{ "intencion": 2, "detalle": "2024-10-27" }}`.
+
+    3) **Agendar cita**: Selecciona esta opción cuando el cliente confirme que puede en un horario específico. **Es obligatorio incluir la fecha y hora en el formato AAAA-MM-DD HH:MM** (ejemplo: 2024-10-28 17:00) para que el sistema pueda reservar la cita.
+
+    - **Asociación de día y hora**: Si el cliente menciona un día (por ejemplo, "el jueves que viene") y luego solo menciona la hora en mensajes posteriores, **asocia automáticamente esa hora con el día mencionado previamente** y devuelve el resultado en formato JSON, por ejemplo `{{ "intencion": 3, "detalle": "2024-10-31 17:00" }}`.
+    
+    4) **Generar link de pago**: Selecciona esta opción cuando la cita ya esté programada y sea necesario generar un enlace de pago para el cliente, devolviendo en formato JSON `{{ "intencion": 4 }}`.
+
+    5) **Cliente envía su nombre**: Selecciona esta opción cuando el cliente envíe su nombre en la conversación. **Incluye el nombre recibido junto al número de la opción** en formato JSON, por ejemplo `{{ "intencion": 5, "detalle": "Daniel Rivas" }}`.
+
+    6) **Cliente no muestra interés**: Selecciona esta opción cuando el cliente expresa que no está interesado en los servicios directa o indirectamente. Si el cliente menciona una razón específica para su falta de interés (por ejemplo, precios altos o ubicación), clasifica esta razón en una de las siguientes categorías y devuelve el formato JSON `{{ "intencion": 6, "categoria": "categoría de causa", "detalle": "causa específica" }}`.
+
+        - **Precio**: El cliente considera que el servicio es muy caro o que los precios son elevados.
+        - **Ubicación**: El cliente menciona que la ubicación no le resulta conveniente.
+        - **Horarios**: El cliente encuentra inconvenientes con los horarios disponibles.
+        - **Preferencias**: El cliente prefiere otros servicios o tiene expectativas diferentes.
+        - **Otros**: Para razones que no se ajusten a las categorías anteriores.
+
+    **Ejemplos de respuesta en formato JSON**:
+        - Cliente: "No puedo pagar ese monto ahora." → `{{ "intencion": 6, "categoria": "Precio", "detalle": "No puedo pagar ese monto ahora." }}`
+        - Cliente: "El lugar me queda lejos." → `{{ "intencion": 6, "categoria": "Ubicación", "detalle": "El lugar me queda lejos." }}`
+
+    **Conversación actual**:
+    
+    """
+
 def prompt_intenciones(fecha_actual):
     fecha_obj = datetime.strptime(fecha_actual, "%Y-%m-%d")
 

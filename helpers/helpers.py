@@ -1,5 +1,38 @@
 import re
 import datetime
+import json
+
+def json_a_lista(datos):
+    # Asumimos que `datos` ya es un diccionario JSON
+    resultado = [datos.get("intencion")]
+
+    # Agregar "categoria" si está presente
+    if "categoria" in datos:
+        resultado.append(datos["categoria"])
+
+    # Agregar "detalle" si está presente
+    if "detalle" in datos:
+        resultado.append(datos["detalle"])
+
+    return resultado
+
+def extraer_json(texto):
+    # Expresión regular para capturar cualquier JSON completo en el formato { ... }, permitiendo saltos de línea
+    patron = r'\{(?:.|\s)*?\}'
+
+    # Buscar el JSON en el texto
+    match = re.search(patron, texto)
+    if match:
+        # Convertir la cadena JSON capturada en un diccionario
+        try:
+            resultado = json.loads(match.group())
+            return resultado
+        except json.JSONDecodeError as e:
+            print("Error de decodificación JSON:", e)
+            return None
+    else:
+        print("Error: No se encontró un JSON válido en el texto.")
+        return None
 
 def format_number(numero_celular):
     # Verificar si el número ya comienza con "+51"
