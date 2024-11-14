@@ -15,14 +15,14 @@ class DataBaseMySQLManager:
     def _connect(self):
         try:
             connection = mysql.connector.connect(
-                #host='localhost',
-                #user='danielrp551',
-                #database='chatbot_db',
-                #password='26deJULIO@'
-                host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                host='localhost',
+                user='danielrp551',
                 database='chatbot_db',
-                user='admin',
-                password='zQumSnUd9MNtjcsK'
+                password='26deJULIO@'
+                #host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
+                #database='chatbot_db',
+                #user='admin',
+                #password='zQumSnUd9MNtjcsK'
             )
             if connection.is_connected():
                 print("Conectado a MySQL")
@@ -309,3 +309,54 @@ class DataBaseMySQLManager:
 
         self.connection.commit()
         cursor.close()
+
+    def agregar_pago_y_confirmar_cita(self, cliente_id, monto, metodo_pago):
+        """
+        Agrega un pago relacionado a la cita más próxima del cliente en estado 'agendada'
+        y cambia el estado de esa cita a 'confirmada'.
+        
+        Args:
+            cliente_id (int): ID del cliente.
+            monto (float): Monto del pago.
+            metodo_pago (str): Método de pago utilizado.
+        
+        Returns:
+            int: ID del pago insertado o None si no se encontró cita.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor(dictionary=True)
+        
+        # Obtener la cita más próxima en estado 'agendada'
+        query_cita = """
+            SELECT cita_id, fecha_cita FROM citas
+            WHERE cliente_id = %s AND estado_cita = 'agendada'
+            ORDER BY fecha_cita ASC LIMIT 1
+        """
+        cursor.execute(query_cita, (cliente_id,))
+        cita = cursor.fetchone()
+
+        if not cita:
+            print(f"No se encontró ninguna cita 'agendada' para el cliente con ID {cliente_id}.")
+            return None
+
+        cita_id = cita['cita_id']
+        fecha_pago = datetime.now()
+        
+        # Insertar el pago relacionado a la cita encontrada
+        query_pago = """
+            INSERT INTO pagos (cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago)
+            VALUES (%s, %s, %s, %s, %s, 'completado')
+        """
+        cursor.execute(query_pago, (cliente_id, cita_id, fecha_pago, monto, metodo_pago))
+        pago_id = cursor.lastrowid
+
+        # Cambiar el estado de la cita a 'confirmada'
+        query_update_cita = "UPDATE citas SET estado_cita = 'confirmada' WHERE cita_id = %s"
+        cursor.execute(query_update_cita, (cita_id,))
+
+        # Confirmar cambios en la base de datos
+        self.connection.commit()
+        cursor.close()
+        
+        print(f"Pago agregado y cita {cita_id} confirmada para el cliente {cliente_id}.")
+        return pago_id

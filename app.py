@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 import os
@@ -120,7 +121,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
 
     elif intencion_list[0] == "4":
         # genero link de pago con culqui
-        link_pago = "https://culqi.com"
+        link_pago = "https://express.culqi.com/pago/HXHKR025JY"
         
         nuevo_estado = 'promesas de pago'   
         if es_transicion_valida(estado_actual, nuevo_estado):
@@ -582,45 +583,44 @@ def verificar_citas_pasadas():
 @app.route('/culqi-webhook', methods=['POST'])
 def culqi_webhook():
     try:
-        # Obtener el cuerpo de la solicitud y los headers
-        request_body = request.data
-        signature = request.headers.get('X-Culqi-Signature')
-        secret = 'TU_SECRETO_DE_WEBHOOK'  # Reemplaza con tu secreto de webhook de Culqi
-
-        # Verificar la firma de la notificación
-        computed_signature = hmac.new(
-            bytes(secret, 'utf-8'),
-            msg=request_body,
-            digestmod=hashlib.sha256
-        ).hexdigest()
-
-        if not hmac.compare_digest(computed_signature, signature):
-            print("Firma inválida")
-            return 'Firma inválida', 400
-
         # Procesar el contenido de la notificación
         data = request.get_json()
         evento = data.get('type')
-        if evento == 'charge.succeeded':
-            charge = data.get('data', {}).get('object', {})
-            # Obtener el ID del cliente o referencia desde el cargo
-            cliente_id = obtener_cliente_id_por_charge(charge)
-            if cliente_id:
-                # Actualizar el estado del cliente a 'cita agendada'
-                dbMySQLManager.actualizar_estado_cliente(cliente_id, 'cita agendada')
+        print("data : ", data)
+        
+        if evento == 'charge.creation.succeeded':  # Verifica si es el evento correcto
+            # Parsear los datos del objeto `charge` dentro de `data`
+            charge_data = data.get('data', {})
+            charge = charge_data if isinstance(charge_data, dict) else json.loads(charge_data)  # Deserializar si es string
+            
+            # Obtener el número de teléfono desde antifraudDetails
+            phone_number = charge.get('antifraudDetails', {}).get('phone')
+            phone_number = format_number(phone_number) if phone_number else None
+            if phone_number:
+                # Buscar al cliente en la base de datos por número de teléfono
+                cliente_id = dbMySQLManager.obtener_id_cliente_por_celular(phone_number)
+                if cliente_id:
+                    # Actualizar el estado del cliente a 'cita agendada'
+                    dbMySQLManager.actualizar_estado_cliente(cliente_id, 'cita agendada')
+                    
+                    # Registrar el pago y confirmar la cita
+                    monto = charge.get('amount', 0) / 100  # Culqi maneja el monto en céntimos, convertir a unidades monetarias
+                    metodo_pago = "link de pago"
+                    dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id, monto, metodo_pago)
+                    
+                    # Enviar mensaje de confirmación al cliente
+                    response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
+                    twilio.send_message(phone_number, response_message)
 
-                # Opcionalmente, enviar mensaje de confirmación al cliente
-                cliente = dbMySQLManager.obtener_cliente(cliente_id)
-                response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
-                twilio.send_message(cliente['celular'], response_message)
-
-                # Actualizar fechas de última interacción
-                fecha_actual = datetime.now()
-                dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id, fecha_actual)
-                dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-                dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente['celular'], response_message)
+                    # Actualizar fechas de última interacción
+                    fecha_actual = datetime.now()
+                    dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
+                    dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(phone_number, response_message)
+                else:
+                    print("No se encontró un cliente con el número de teléfono:", phone_number)
             else:
-                print("No se encontró el cliente_id en el cargo")
+                print("No se encontró el número de teléfono en antifraudDetails")
+
         else:
             print(f"Evento no manejado: {evento}")
 
