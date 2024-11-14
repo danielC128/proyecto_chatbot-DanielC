@@ -11,8 +11,8 @@ refresh_token = refresh_token_zoho
 zoho_manager = ZohoCRMManager(client_id, client_secret, redirect_uri, refresh_token)
 
 # Obtener todos los clientes
-leads_formateados = zoho_manager.obtener_leads_formateados(limit=5)
+leads_formateados = zoho_manager.obtener_leads_formateados(limit=1)
 for lead in leads_formateados:
     print(lead)
 
-print(zoho_manager.obtener_todos_los_leads(limit=2))
+print(zoho_manager.obtener_todos_los_leads(limit=1))

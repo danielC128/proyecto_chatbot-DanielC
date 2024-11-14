@@ -1,5 +1,6 @@
 import requests
 import json
+from datetime import datetime, timedelta
 
 class ZohoCRMManager:
     def __init__(self, client_id, client_secret, redirect_uri, refresh_token):
@@ -144,3 +145,87 @@ class ZohoCRMManager:
             return None
 
     # Repite la misma estructura en los otros métodos (actualizar_cliente, eliminar_cliente, etc.)
+    def obtener_leads_filtrados(self, fecha_creacion=None, lead_status=None, campaign_name=None, limit=10):
+        """
+        Obtiene leads de Zoho CRM con filtros aplicados directamente en la solicitud.
+
+        Args:
+            fecha_creacion (str): Filtra los leads por fecha de creación (en formato 'YYYY-MM-DD').
+            lead_status (str): Filtra los leads por estado del lead.
+            campaign_name (str): Filtra los leads por nombre de campaña.
+            limit (int): Cantidad máxima de leads a recuperar.
+
+        Returns:
+            list: Lista de leads que cumplen con los filtros.
+        """
+        url = f"{self.api_base_url}/Leads"
+        params = {
+            'per_page': limit,
+            'page': 1
+        }
+        
+        # Construimos el criterio de búsqueda de forma dinámica
+        criteria = []
+        
+        # Filtro por fecha de creación (solo si el campo es soportado por Zoho)
+        if fecha_creacion:
+            criteria.append(f"(Fecha_creacion:after:{fecha_creacion})")
+        
+        # Filtro por estado del lead
+        if lead_status:
+            criteria.append(f"(Lead_Status:equals:{lead_status})")
+        
+        # Filtro por nombre de campaña, usando el nombre exacto del campo
+        if campaign_name:
+            criteria.append(f"(Campaing_Name:equals:{campaign_name})")
+        
+        # Unimos los criterios con "and" para hacer una consulta avanzada
+        if criteria:
+            params['criteria'] = ' and '.join(criteria)
+        
+        response = self._request_with_token_refresh("GET", url, params=params)
+        if response.status_code == 200:
+            leads = response.json().get('data', [])
+            print(f"Se obtuvieron {len(leads)} leads filtrados directamente desde Zoho.")
+            return leads
+        else:
+            print(f"Error al obtener los leads filtrados: {response.text}")
+            return []
+
+    def formatear_lead(self, lead):
+        """
+        Toma un diccionario de lead y devuelve un string con los detalles formateados para imprimir.
+
+        Args:
+            lead (dict): Diccionario con la información del lead.
+
+        Returns:
+            str: Cadena formateada con los detalles del lead.
+        """
+        # Extrae cada campo o asigna un valor por defecto si no está disponible
+        id_lead = lead.get("id", "ID no disponible")
+        nombre = f"{lead.get('First_Name', 'Nombre no disponible')} {lead.get('Last_Name', 'Apellido no disponible')}"
+        email = lead.get("Email", "Email no disponible")
+        telefono = lead.get("Mobile", "Teléfono no disponible")
+        fuente = lead.get("Lead_Source", "Fuente no disponible")
+        estado = lead.get("Lead_Status", "Estado no disponible")
+        fecha_creacion = lead.get("Fecha_creacion", "Fecha de creación no disponible")
+        prioridad = lead.get("Prioridad_Lead", "Prioridad no disponible")
+        descripcion = lead.get("Description", "Descripción no disponible")
+        campaña = lead.get("Campaing_Name", "Campaña no disponible")
+
+        # Formateamos los detalles en un string legible
+        lead_formateado = (
+            f"ID: {id_lead}\n"
+            f"Nombre: {nombre}\n"
+            f"Email: {email}\n"
+            f"Teléfono: {telefono}\n"
+            f"Fuente del Lead: {fuente}\n"
+            f"Estado: {estado}\n"
+            f"Fecha de Creación: {fecha_creacion}\n"
+            f"Prioridad: {prioridad}\n"
+            f"Descripción: {descripcion}\n"
+            f"Campaña: {campaña}\n"
+        )
+
+        return lead_formateado
