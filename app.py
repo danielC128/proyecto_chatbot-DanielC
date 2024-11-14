@@ -153,7 +153,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
 
     # Enviar respuesta al cliente
     if cliente["nombre"] == "":
-        response_message = openai.consultaNombre(cliente, response_message)
+        response_message = openai.consultaNombre(cliente, response_message,conversation_actual)
 
     print("Response message type:", type(response_message))
     response_message = response_message.replace("Asesor: ", "").strip('"')
