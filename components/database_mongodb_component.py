@@ -9,7 +9,7 @@ class DataBaseMongoDBManager:
 
     def _connect(self):
         uri = 'mongodb://localhost:27017/'
-        #uri = "mongodb+srv://admin:zQumSnUd9MNtjcsK@cluster0.mw4xl.mongodb.net/?retryWrites=true&w=majority"
+        uri = "mongodb+srv://admin:zQumSnUd9MNtjcsK@cluster0.mw4xl.mongodb.net/?retryWrites=true&w=majority"
         client = MongoClient(uri)
         return client.chatbot_db
 
