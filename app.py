@@ -166,7 +166,10 @@ def enviar_respuesta(cliente, cliente_nuevo):
     if cliente["nombre"] == "":
         response_message = openai.consultaNombre(cliente, response_message,conversation_actual)
 
-    print("Response message type:", type(response_message))
+    print("Response message:", response_message)
+    response_message = extraer_json(response_message)
+    print("Response message json:", response_message)
+    response_message = response_message["mensaje"]
     response_message = response_message.replace("Asesor: ", "").strip('"')
     twilio.send_message(cliente["celular"], response_message)
 

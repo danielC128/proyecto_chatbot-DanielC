@@ -147,8 +147,8 @@ class ZohoCRMManager:
     # Repite la misma estructura en los otros métodos (actualizar_cliente, eliminar_cliente, etc.)
     def obtener_leads_filtrados(self, fecha_creacion=None, lead_status=None, campaign_name=None, limit=10):
         """
-        Obtiene leads de Zoho CRM con filtros aplicados directamente en la solicitud.
-
+        Obtiene leads de Zoho CRM con filtros aplicados usando el endpoint de búsqueda avanzada.
+        
         Args:
             fecha_creacion (str): Filtra los leads por fecha de creación (en formato 'YYYY-MM-DD').
             lead_status (str): Filtra los leads por estado del lead.
@@ -158,16 +158,16 @@ class ZohoCRMManager:
         Returns:
             list: Lista de leads que cumplen con los filtros.
         """
-        url = f"{self.api_base_url}/Leads"
+        url = f"{self.api_base_url}/Leads/search"
         params = {
             'per_page': limit,
             'page': 1
         }
-        
+
         # Construimos el criterio de búsqueda de forma dinámica
         criteria = []
         
-        # Filtro por fecha de creación (solo si el campo es soportado por Zoho)
+        # Filtro por fecha de creación
         if fecha_creacion:
             criteria.append(f"(Fecha_creacion:after:{fecha_creacion})")
         
@@ -175,7 +175,7 @@ class ZohoCRMManager:
         if lead_status:
             criteria.append(f"(Lead_Status:equals:{lead_status})")
         
-        # Filtro por nombre de campaña, usando el nombre exacto del campo
+        # Filtro por nombre de campaña
         if campaign_name:
             criteria.append(f"(Campaing_Name:equals:{campaign_name})")
         
@@ -189,7 +189,7 @@ class ZohoCRMManager:
             print(f"Se obtuvieron {len(leads)} leads filtrados directamente desde Zoho.")
             return leads
         else:
-            print(f"Error al obtener los leads filtrados: {response.text}")
+            print(f"Error al obtener los leads filtrados: {response}")
             return []
 
     def formatear_lead(self, lead):
@@ -229,3 +229,108 @@ class ZohoCRMManager:
         )
 
         return lead_formateado
+
+    def obtener_leads_filtradosv2(self, fecha_creacion=None, lead_status=None, campaign_name=None, limit=10):
+        """
+        Obtiene leads de Zoho CRM aplicando filtros.
+
+        Args:
+            fecha_creacion (str): Filtra los leads por fecha de creación en formato ISO (YYYY-MM-DD).
+            lead_status (str): Filtra los leads por estado del lead.
+            campaign_name (str): Filtra los leads por nombre de campaña.
+            limit (int): Cantidad máxima de leads a recuperar.
+
+        Returns:
+            list: Lista de leads que cumplen con los filtros.
+        """
+        url = f"{self.api_base_url}/Leads/search"
+        
+        # Construir el criterio de búsqueda
+        criteria = []
+        
+        # Validar y agregar criterios
+        if fecha_creacion:
+            criteria.append(f'(Fecha_creacion:greater_than:{fecha_creacion})')
+        if lead_status:
+            criteria.append(f"(Lead_Status:equals:{lead_status})")
+        if campaign_name:
+            criteria.append(f"(Campaing_Name:equals:{campaign_name})")
+        
+        # Asegurarse de que al menos un criterio esté presente
+        if not criteria:
+            print("No se especificaron criterios de búsqueda.")
+            return []
+        
+        # Preparar parámetros
+        params = {
+            'criteria': ' and '.join(criteria),
+            'per_page': limit,
+            'page': 1
+        }
+        print("parametros enviar : ",url,params)
+        # Realizar la solicitud
+        response = self._request_with_token_refresh("GET", url, params=params)
+        
+        if response.status_code == 200:
+            leads = response.json().get('data', [])
+            print(f"Se obtuvieron {len(leads)} leads filtrados directamente desde Zoho.")
+            return leads
+        else:
+            print(f"Error al obtener los leads filtrados: {response}")
+            return []
+
+    def obtener_leads_filtradosv3(self, start_date=None, end_date=None, lead_status=None, campaign_name=None, limit=10):
+        """
+        Obtiene leads de Zoho CRM aplicando filtros mediante COQL.
+
+        Args:
+            start_date (str): Fecha de inicio en formato 'YYYY-MM-DD'.
+            end_date (str): Fecha de fin en formato 'YYYY-MM-DD'.
+            lead_status (str): Estado del lead.
+            campaign_name (str): Nombre de la campaña.
+            limit (int): Número máximo de leads a recuperar.
+
+        Returns:
+            list: Lista de leads que cumplen con los filtros.
+        """
+        url = f"{self.api_base_url}/coql"
+        headers = {
+            'Authorization': f'Zoho-oauthtoken {self.access_token}',
+            'Content-Type': 'application/json'
+        }
+        print(self.access_token)
+        # Construir la consulta COQL
+        query = "SELECT * FROM Leads"
+        conditions = []
+
+        if start_date and end_date:
+            conditions.append(f"Created_Time BETWEEN '{start_date}T00:00:00+00:00' AND '{end_date}T23:59:59+00:00'")
+        elif start_date:
+            conditions.append(f"Created_Time >= '{start_date}T00:00:00+00:00'")
+        elif end_date:
+            conditions.append(f"Created_Time <= '{end_date}T23:59:59+00:00'")
+
+        if lead_status:
+            conditions.append(f"Lead_Status = '{lead_status}'")
+
+        if campaign_name:
+            conditions.append(f"Campaign_Name = '{campaign_name}'")
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += f" LIMIT {limit}"
+
+        payload = {
+            'select_query': query
+        }
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+        if response.status_code == 200:
+            leads = response.json().get('data', [])
+            print(f"Se obtuvieron {len(leads)} leads filtrados directamente desde Zoho.")
+            return leads
+        else:
+            print(f"Error al obtener los leads filtrados: {response.json()}")
+            return []
