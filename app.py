@@ -113,7 +113,7 @@ def enviar_respuesta(cliente, cliente_nuevo):
         else:
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")             
         print("Fecha y hora de la cita:", intencion_list[1].lstrip())
-        reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente['nombre']}")
+        reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente['nombre']}",duration_minutes=30)
         print("Cita reservada:", reserva_cita)
         response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history)
     
