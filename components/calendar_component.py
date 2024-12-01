@@ -141,11 +141,17 @@ class GoogleCalendarManager:
 
     def is_time_available(self, start_time, end_time):
         """Verificar si un horario está disponible."""
-        # Convertir a formato ISO UTC
-        time_min = start_time.astimezone(pytz.UTC).isoformat()
-        time_max = end_time.astimezone(pytz.UTC).isoformat()
         try:
+            # Asegurarse de que start_time y end_time estén en la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+            if start_time.tzinfo is None:
+                start_time = lima_tz.localize(start_time)
+            if end_time.tzinfo is None:
+                end_time = lima_tz.localize(end_time)
 
+            # Convertir fechas al formato ISO sin forzar UTC
+            time_min = start_time.isoformat()
+            time_max = end_time.isoformat()
             
             events_result = self.service.events().list(
                 calendarId=self.CALENDAR_ID,
@@ -224,3 +230,78 @@ class GoogleCalendarManager:
         except Exception as e:
             print(f"Error al reservar cita: {e}")
             return None
+
+
+    def listar_eventos_del_dia(self, fecha):
+        """
+        Listar todos los eventos de un día específico.
+        :param fecha: Fecha en formato 'YYYY-MM-DD'.
+        :return: Lista de eventos encontrados en ese día.
+        """
+        try:
+            # Convertir la fecha al rango de tiempo para el día completo (UTC)
+            lima_tz = pytz.timezone('America/Lima')
+            start_of_day = lima_tz.localize(dt.datetime.strptime(fecha, '%Y-%m-%d')).astimezone(pytz.UTC)
+            end_of_day = (start_of_day + dt.timedelta(days=1)).astimezone(pytz.UTC)
+
+            events_result = self.service.events().list(
+                calendarId=self.CALENDAR_ID,
+                timeMin=start_of_day.isoformat(),
+                timeMax=end_of_day.isoformat(),
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+
+            events = events_result.get('items', [])
+            print(f"Eventos encontrados para el día {fecha}: {len(events)}")
+
+            return events
+
+        except Exception as e:
+            print(f"Error al listar eventos del día {fecha}: {e}")
+            return []
+
+
+    def is_time_available_v2(self, start_time, end_time):
+        """
+        Verificar si un horario está disponible en el calendario, comparando con eventos del día.
+        :param start_time: datetime de inicio.
+        :param end_time: datetime de fin.
+        :return: True si está disponible, False si hay conflicto.
+        """
+        try:
+            # Normalizar fechas a UTC si no tienen zona horaria
+            if start_time.tzinfo is None:
+                start_time = pytz.UTC.localize(start_time)
+            if end_time.tzinfo is None:
+                end_time = pytz.UTC.localize(end_time)
+
+            # Listar eventos del día
+            fecha = start_time.strftime('%Y-%m-%d')
+            eventos_del_dia = self.listar_eventos_del_dia(fecha)
+
+            for event in eventos_del_dia:
+                # Manejar eventos con dateTime o date
+                event_start = event.get('start').get('dateTime')
+                event_end = event.get('end').get('dateTime')
+
+                if not event_start or not event_end:
+                    continue  # Ignorar eventos sin horarios específicos
+
+                # Convertir tiempos del evento a objetos datetime (offset-aware)
+                event_start = dt.datetime.fromisoformat(event_start).astimezone(pytz.UTC)
+                event_end = dt.datetime.fromisoformat(event_end).astimezone(pytz.UTC)
+
+                print(f"Comparando con evento: {event['summary']} ({event_start} - {event_end})")
+
+                # Verificar solapamiento de rangos
+                if not (end_time <= event_start or start_time >= event_end):
+                    print(f"Conflicto detectado con evento: {event['summary']} ({event_start} - {event_end})")
+                    return False
+
+            # Si no hay conflictos, el horario está disponible
+            return True
+
+        except Exception as e:
+            print(f"Error al verificar disponibilidad: {e}")
+            return False
