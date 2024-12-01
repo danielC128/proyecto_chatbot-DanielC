@@ -115,9 +115,9 @@ def enviar_respuesta(cliente, cliente_nuevo):
         print("Fecha y hora de la cita:", intencion_list[1].lstrip())
         reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente['nombre']}",duration_minutes=30)
         if not reserva_cita:
-            response_message = "Hubo un error al reservar la cita. Por favor, intenta nuevamente."
+            response_message = f"""{{"mensaje": "Hubo un error al reservar la cita. Por favor, intenta nuevamente."}}"""
         elif reserva_cita == "Horario no disponible":
-            response_message = "Lo siento, el horario seleccionado ya no está disponible. Por favor, intenta con otro horario."
+            response_message = f"""{{"mensaje": "Lo siento, el horario seleccionado no está disponible. Por favor, selecciona otro horario."}}"""
         else:
             print("Cita reservada:", reserva_cita)
             response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history)

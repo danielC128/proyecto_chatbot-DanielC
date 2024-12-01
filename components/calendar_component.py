@@ -141,9 +141,12 @@ class GoogleCalendarManager:
 
     def is_time_available(self, start_time, end_time):
         """Verificar si un horario está disponible."""
-        time_min = start_time.isoformat() + "Z"
-        time_max = end_time.isoformat() + "Z"
+        # Convertir a formato ISO UTC
+        time_min = start_time.astimezone(pytz.UTC).isoformat()
+        time_max = end_time.astimezone(pytz.UTC).isoformat()
         try:
+
+            
             events_result = self.service.events().list(
                 calendarId=self.CALENDAR_ID,
                 timeMin=time_min,
@@ -153,7 +156,28 @@ class GoogleCalendarManager:
                 orderBy='startTime'
             ).execute()
             events = events_result.get('items', [])
+            print(f"Verificando conflictos para {start_time} - {end_time}. Eventos encontrados: {len(events)}")
             return len(events) == 0
+            # proximamente se implementara la verificacion de eventos
+            for event in events:
+                # Manejar eventos con dateTime o date
+                event_start = event.get('start').get('dateTime')
+                event_end = event.get('end').get('dateTime')
+
+                # Si no hay dateTime, manejarlo como un evento de todo el día
+                if not event_start or not event_end:
+                    continue                
+                # Obtener inicio y fin del evento existente
+                event_start = dt.datetime.fromisoformat(event['start']['dateTime']).astimezone(pytz.UTC)
+                event_end = dt.datetime.fromisoformat(event['end']['dateTime']).astimezone(pytz.UTC)
+
+                # Comparar si hay solapamiento
+                if not (end_time <= event_start or start_time >= event_end):
+                    print(f"Conflicto detectado con evento: {event['summary']} ({event_start} - {event_end})")
+                    return False
+
+            # Si no hay conflictos, el horario está disponible
+            return True
         except Exception as e:
             print(f"Error al verificar disponibilidad: {e}")
             return False
