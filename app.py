@@ -114,18 +114,23 @@ def enviar_respuesta(cliente, cliente_nuevo):
             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")             
         print("Fecha y hora de la cita:", intencion_list[1].lstrip())
         reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente['nombre']}",duration_minutes=30)
-        print("Cita reservada:", reserva_cita)
-        response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history)
+        if not reserva_cita:
+            response_message = "Hubo un error al reservar la cita. Por favor, intenta nuevamente."
+        elif reserva_cita == "Horario no disponible":
+            response_message = "Lo siento, el horario seleccionado ya no está disponible. Por favor, intenta con otro horario."
+        else:
+            print("Cita reservada:", reserva_cita)
+            response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history)
     
-        fecha_cita = datetime.fromisoformat(reserva_cita["start"]["dateTime"]).strftime('%Y-%m-%d %H:%M:%S')
-        # Registrar la cita en MySQL y vincularla con la conversación activa
-        dbMySQLManager.insertar_cita(
-            cliente_id=cliente_id_mysql,
-            fecha_cita=fecha_cita,
-            motivo="Consulta de cita",
-            estado_cita="agendada",
-            conversacion_id=conversacion_id_mysql
-        )        
+            fecha_cita = datetime.fromisoformat(reserva_cita["start"]["dateTime"]).strftime('%Y-%m-%d %H:%M:%S')
+            # Registrar la cita en MySQL y vincularla con la conversación activa
+            dbMySQLManager.insertar_cita(
+                cliente_id=cliente_id_mysql,
+                fecha_cita=fecha_cita,
+                motivo="Consulta de cita",
+                estado_cita="agendada",
+                conversacion_id=conversacion_id_mysql
+            )        
 
     elif intencion_list[0] == 4:
         print("Ingreso a la intencion 4")

@@ -176,6 +176,11 @@ class GoogleCalendarManager:
             # Calcular la fecha y hora de fin sumando la duración de la cita
             end_datetime = start_datetime + dt.timedelta(minutes=duration_minutes)
 
+            # Verificar si el horario está disponible
+            if not self.is_time_available(start_datetime, end_datetime):
+                print("El horario no está disponible. Por favor, elige otro horario.")
+                return "Horario no disponible"
+
             # Formatear las fechas y horas en el formato ISO con zona horaria
             start_time = start_datetime.isoformat()
             end_time = end_datetime.isoformat()
