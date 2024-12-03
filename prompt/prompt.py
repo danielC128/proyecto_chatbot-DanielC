@@ -802,7 +802,7 @@ def prompt_intencionesv2(fecha_actual):
 
     5) **Cliente envía su nombre**: Selecciona esta opción cuando el cliente envíe su nombre en la conversación. **Incluye el nombre recibido junto al número de la opción** en formato JSON, por ejemplo `{{ "intencion": 5, "detalle": "Daniel Rivas" }}`.
 
-    6) **Cliente no muestra interés**: Selecciona esta opción cuando el cliente expresa que no está interesado en los servicios directa o indirectamente. Si el cliente menciona una razón específica para su falta de interés (por ejemplo, precios altos o ubicación), clasifica esta razón en una de las siguientes categorías y devuelve el formato JSON `{{ "intencion": 6, "categoria": "categoría de causa", "detalle": "causa específica" }}`.
+    6) **Cliente no muestra interés**: Selecciona esta opción cuando el cliente expresa que no está interesado en los servicios directamente. Si el cliente menciona una razón específica para su falta de interés (por ejemplo, precios altos o ubicación), clasifica esta razón en una de las siguientes categorías y devuelve el formato JSON `{{ "intencion": 6, "categoria": "categoría de causa", "detalle": "causa específica" }}`.
 
         - **Precio**: El cliente considera que el servicio es muy caro o que los precios son elevados.
         - **Ubicación**: El cliente menciona que la ubicación no le resulta conveniente.
