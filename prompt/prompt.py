@@ -250,7 +250,7 @@ La unidad folicular tiene un costo de 1.7 soles por folículo trasplantado.
 - **Número de contacto de IFC**: +51972537158
 - **Horarios de atención**: Martes y Jueves de 1:30 p.m. a 8:30 p.m. ; sábados de 10 a.m. 5 p.m.
 - **Link de pago de 60 soles**: https://express.culqi.com/pago/HXHKR025JY (En este link pago se puede pagar por yape, plin o tarjeta de crédito) -> En caso el cliente quiera cancelar la cita completa con el descuento
-- **Link de pago de 30 soles**: https://express.culqi.com/pago/2JXJXJXJXJXJ (En este link pago se puede pagar por yape, plin o tarjeta de crédito) -> En caso el cliente quiera cancelar la cita con el pago parcial de 30 soles
+- **Link de pago de 30 soles**: https://express.culqi.com/pago/4XCSWS2MAI (En este link pago se puede pagar por yape, plin o tarjeta de crédito) -> En caso el cliente quiera cancelar la cita con el pago parcial de 30 soles
 - **Promoción**: Menciona la promoción actual de 40% de descuento en la consulta inicial (de 100 soles a 60 soles) solo si notas que al cliente el precio le parece elevado. Ofrece el descuento como algo especial para él. **SOLO OFRECER DESCUENTO SI EL CLIENTE PAGA DE FORMA ONLINE PREVIAMENTE A LA CITA.**
 
 ### **Datos del cliente**:
