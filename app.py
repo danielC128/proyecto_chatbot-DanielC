@@ -168,8 +168,8 @@ def enviar_respuesta(cliente, cliente_nuevo):
             response_message = openai.consulta(cliente_mysql, conversation_actual, conversation_history)
 
     # Enviar respuesta al cliente
-    if cliente["nombre"] == "":
-        response_message = openai.consultaNombre(cliente, response_message,conversation_actual)
+    #if cliente["nombre"] == "":
+    #    response_message = openai.consultaNombre(cliente, response_message,conversation_actual)
 
     print("Response message:", response_message)
     response_message = extraer_json(response_message)
