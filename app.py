@@ -6,6 +6,7 @@ import hmac
 import re
 import hashlib
 from datetime import datetime, timedelta
+from celery_app import celery
 from flask import Flask, request, jsonify
 from components.twilio_component import TwilioManager
 from components.openai_component import OpenAIManager
@@ -30,12 +31,23 @@ leaderManager = LeadManager("leads/Leads_Prueba.csv")
 zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localhost', refresh_token_zoho)
 #culqi = CulqiManager()
 
-# Diccionario para almacenar temporizadores activos por cliente
-timers = {}
-
 # Función para enviar la respuesta al cliente después del retardo
-def enviar_respuesta(cliente, cliente_nuevo):
-    print("Enviando respuesta a:", cliente["celular"])
+@celery.task
+def enviar_respuesta(celular, cliente_nuevo):
+    print("Enviando respuesta a:", celular)
+
+    # Inicializar los componentes dentro de la tarea
+    twilio = TwilioManager()
+    openai = OpenAIManager()
+    calendar = GoogleCalendarManager()
+    dbMongoManager = DataBaseMongoDBManager()
+    dbMySQLManager = DataBaseMySQLManager()
+
+    # Recuperar el cliente desde la base de datos dentro de la tarea
+    cliente = dbMongoManager.obtener_cliente_por_celular(celular)
+    if not cliente:
+        # Maneja el caso donde el cliente no existe
+        return
 
     # Obtener o crear cliente en MySQL
     cliente_id_mysql = dbMySQLManager.insertar_cliente(
@@ -182,8 +194,6 @@ def enviar_respuesta(cliente, cliente_nuevo):
     print("Response message:", response_message)
     dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
     dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
-    # Eliminar el temporizador del cliente una vez que se haya respondido
-    timers.pop(cliente["celular"], None)
 
 @app.route('/bot', methods=['POST'])
 def whatsapp_bot():
@@ -207,24 +217,14 @@ def whatsapp_bot():
             # Se crea una conversacion activa, solo se crea
             print("Creando una nueva conversación activa para el cliente.")
             dbMongoManager.crear_conversacion_activa(celular)
-        # Verificar si ya hay un temporizador en curso para este cliente
-        if celular in timers:
-            # Si ya existe un temporizador, lo cancelamos
-            timers[celular].cancel()
-            print("Temporizador existente cancelado para el cliente:", cliente["nombre"])
-                        # Agrega la interacción del cliente a la conversación actual
-            dbMongoManager.guardar_mensaje_cliente_ultima_interaccion(celular, incoming_msg)
-            print("Interacción del cliente guardada en la conversación actual.")
-        else:
-            # Si no existe un temporizador, crear una nueva interacción
-            print("Creando una nueva interacción para el cliente.")
-            dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)            
 
-        # Crear un nuevo temporizador de 60 segundos antes de responder
-        timer = threading.Timer(2, enviar_respuesta, args=[cliente,cliente_nuevo])
-        timers[celular] = timer
-        timer.start()
-        print("Nuevo temporizador iniciado para el cliente:", sender)
+        # Agrega la interacción del cliente a la conversación actual
+        dbMongoManager.guardar_mensaje_cliente_ultima_interaccion(celular, incoming_msg)
+        print("Interacción del cliente guardada en la conversación actual.")         
+
+        # Llama a la tarea de Celery con un retraso de 2 segundos
+        enviar_respuesta.apply_async(args=[celular, cliente_nuevo], countdown=2)
+        print("Tarea de Celery programada para el cliente:", celular)
 
         return 'OK', 200
 
