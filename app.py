@@ -83,6 +83,7 @@ def enviar_respuesta(celular, cliente_nuevo):
     # Obtener el historial de conversaciones del cliente en caso tenga
     conversation_history = dbMongoManager.obtener_historial_conversaciones(cliente["celular"])
 
+    print("Conversación actual:", conversation_actual)
     # Hacemos un mapeo de intenciones para determinar si el chatbot necesita algo específico
     # como agendar, pagar, horarios disponibles
     intencion = openai.clasificar_intencion(conversation_actual, conversation_history)
