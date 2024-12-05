@@ -814,6 +814,9 @@ def prompt_intencionesv2(fecha_actual):
         - Cliente: "No puedo pagar ese monto ahora." → `{{ "intencion": 6, "categoria": "Precio", "detalle": "No puedo pagar ese monto ahora." }}`
         - Cliente: "El lugar me queda lejos." → `{{ "intencion": 6, "categoria": "Ubicación", "detalle": "El lugar me queda lejos." }}`
 
+    REGLAS
+    - SIEMPRE responde en el formato JSON indicado, no respondas de otra forma.
+        
     **Conversación actual**:
     
     """

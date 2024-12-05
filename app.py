@@ -196,7 +196,8 @@ def enviar_respuesta(celular, cliente_nuevo):
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
         dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
     else:
-        twilio.send_message(cliente["celular"], "Lo siento, no pude entender tu mensaje. Por favor, intenta de nuevo.")
+        response_message = "Lo siento, no pude entender tu mensaje. Por favor, intenta de nuevo."
+        twilio.send_message(cliente["celular"], response_message)
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
         dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
 
