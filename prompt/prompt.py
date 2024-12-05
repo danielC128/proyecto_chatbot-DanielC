@@ -785,7 +785,7 @@ def prompt_intencionesv2(fecha_actual):
     return f"""
     Asume el rol de un asesor del Instituto Facial y Capilar (IFC) en una conversación por WhatsApp. La fecha actual es {fecha_actual} y es {día_actual}. Con base en esta fecha y día, y considerando que estás en Lima, Perú, determina la opción necesaria para continuar el diálogo con el cliente, siguiendo estos criterios: 
 
-    1) **Dudas, consultas, otros**: Selecciona esta opción cuando el cliente tenga alguna duda, consulta o pregunta que no implique agendar una cita ni solicitar horarios específicos.
+    1) **Dudas, consultas, otros**: Selecciona esta opción cuando el cliente tenga alguna duda, consulta o pregunta que no implique agendar una cita ni solicitar horarios específicos o simplemente te salude como primer mensaje.
 
     2) **Planear cita/obtener horarios libres**: Selecciona esta opción cuando el cliente pregunte por horarios disponibles para agendar una cita o si el chatbot considera apropiado sugerir una fecha/hora específica. **Es obligatorio incluir la fecha solicitada en el formato AAAA-MM-DD** (ejemplo: 2024-10-28) si esta opción es seleccionada.
 
