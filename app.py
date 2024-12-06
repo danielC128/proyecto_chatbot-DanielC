@@ -36,7 +36,7 @@ zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localh
 def enviar_respuesta(celular, cliente_nuevo):
     print("Enviando respuesta a:", celular)
 
-    # Inicializar los componentes dentro de la tarea
+    # Inicializo los componentes dentro de la tarea
     twilio = TwilioManager()
     openai = OpenAIManager()
     calendar = GoogleCalendarManager()
@@ -226,7 +226,8 @@ def whatsapp_bot():
             dbMongoManager.crear_conversacion_activa(celular)
 
         # Agrega la interacción del cliente a la conversación actual
-        dbMongoManager.guardar_mensaje_cliente_ultima_interaccion(celular, incoming_msg)
+        #dbMongoManager.guardar_mensaje_cliente_ultima_interaccion(celular, incoming_msg)
+        dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)
         print("Interacción del cliente guardada en la conversación actual.")         
 
         # Llama a la tarea de Celery con un retraso de 2 segundos
