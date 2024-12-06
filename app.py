@@ -121,7 +121,7 @@ def enviar_respuesta(celular, cliente_nuevo):
             except Exception as e:
                 print("Error al obtener horarios disponibles:", e)
                 horarios_disponibles = []
-                response_message = "Lo siento, no pude obtener los horarios disponibles. Por favor, intenta de nuevo."
+                response_message =  f"""{{ "mensaje": "Hubo un error al obtener los horarios disponibles. Por favor, intenta nuevamente." }}"""
         elif intencion_list[0] == 3:
             print("Ingreso a la intencion 3")
             nuevo_estado = 'promesas de pago'   
