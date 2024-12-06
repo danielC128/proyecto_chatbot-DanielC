@@ -114,9 +114,14 @@ def enviar_respuesta(celular, cliente_nuevo):
                 dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)  
                 dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)      
             print("Fecha de la cita:", intencion_list[1].strip())
-            horarios_disponibles = calendar.listar_horarios_disponibles(intencion_list[1].strip())
-            print("Horarios disponibles:", horarios_disponibles)
-            response_message = openai.consultaHorarios(cliente_mysql,horarios_disponibles,conversation_actual,conversation_history,intencion_list[1])
+            try:
+                horarios_disponibles = calendar.listar_horarios_disponibles(intencion_list[1].strip())
+                print("Horarios disponibles:", horarios_disponibles)
+                response_message = openai.consultaHorarios(cliente_mysql,horarios_disponibles,conversation_actual,conversation_history,intencion_list[1])
+            except Exception as e:
+                print("Error al obtener horarios disponibles:", e)
+                horarios_disponibles = []
+                response_message = "Lo siento, no pude obtener los horarios disponibles. Por favor, intenta de nuevo."
         elif intencion_list[0] == 3:
             print("Ingreso a la intencion 3")
             nuevo_estado = 'promesas de pago'   

@@ -816,6 +816,7 @@ def prompt_intencionesv2(fecha_actual):
 
     REGLAS
     - SIEMPRE responde en el formato JSON indicado, no respondas de otra forma.
+    - Para las opciones 2 y 3, asegúrate de incluir la fecha y hora solicitada en el formato correcto.
         
     **Conversación actual**:
     
