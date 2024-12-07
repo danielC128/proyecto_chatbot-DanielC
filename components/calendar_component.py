@@ -10,8 +10,8 @@ import os.path
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 class GoogleCalendarManager:
-    CALENDAR_ID = "195010dac8c1b91a8bbee7c8b9476895cc5cbf034e9d09bbf9fb7490e3f89d07@group.calendar.google.com"
-
+    #CALENDAR_ID = "195010dac8c1b91a8bbee7c8b9476895cc5cbf034e9d09bbf9fb7490e3f89d07@group.calendar.google.com"
+    CALENDAR_ID = "ifc.citas@gmail.com"
     def __init__(self):
         self.service = self._authenticate()
 
