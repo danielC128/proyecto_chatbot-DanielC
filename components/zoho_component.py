@@ -93,6 +93,7 @@ class ZohoCRMManager:
 
         response = self._request_with_token_refresh("GET", url, params=params)
         if response.status_code == 200:
+            print("Respuesta: ", response.json())
             leads = response.json().get('data', [])
             print(f"Se obtuvieron {len(leads)} leads.")
             return leads
@@ -230,7 +231,7 @@ class ZohoCRMManager:
 
         return lead_formateado
 
-    def obtener_leads_filtradosv2(self, fecha_creacion=None, lead_status=None, campaign_name=None, limit=10):
+    def obtener_leads_filtradosv2(self, fecha_creacion=None, lead_status=None, campaign_name=None, limit=None):
         """
         Obtiene leads de Zoho CRM aplicando filtros.
 
@@ -334,3 +335,83 @@ class ZohoCRMManager:
         else:
             print(f"Error al obtener los leads filtrados: {response.json()}")
             return []
+        
+    def obtener_leads_filtrados_vf(self, fecha_creacion=None, lead_status=None, campaign_name=None, limit=None):
+        """
+        Obtiene leads de Zoho CRM aplicando filtros.
+
+        Args:
+            fecha_creacion (str): Filtra los leads por fecha de creación en formato ISO (YYYY-MM-DD).
+            lead_status (list): Lista de estados del lead para filtrar.
+            campaign_name (str): Filtra los leads por nombre de campaña.
+            limit (int): Cantidad máxima de leads a devolver después de aplicar todos los filtros.
+
+        Returns:
+            list: Lista de leads que cumplen con los filtros.
+        """
+        url = f"{self.api_base_url}/Leads/search"
+        
+        # Construir el criterio de búsqueda
+        criteria = []
+        
+        # Validar y agregar criterios
+        if lead_status and isinstance(lead_status, list):
+            status_criteria = ' or '.join([f"(Lead_Status:equals:{status})" for status in lead_status])
+            criteria.append(f"({status_criteria})")
+        elif lead_status:
+            criteria.append(f"(Lead_Status:equals:{lead_status})")
+        
+        if campaign_name:
+            criteria.append(f"(Campaing_Name:equals:{campaign_name})")
+        
+        # Asegurarse de que al menos un criterio esté presente
+        if not criteria:
+            print("No se especificaron criterios de búsqueda.")
+            return []
+        
+        # Parámetros iniciales
+        params = {
+            'criteria': ' and '.join(criteria),
+            'per_page': 200,  # Máximo permitido por Zoho en una sola solicitud
+            'page': 1
+        }
+        
+        all_leads = []
+
+        # Paginar para obtener todos los leads
+        while True:
+            print("Parámetros enviados: ", url, params)
+            response = self._request_with_token_refresh("GET", url, params=params)
+            
+            if response.status_code == 200:
+                data = response.json().get('data', [])
+                all_leads.extend(data)
+                
+                print(f"Se obtuvieron {len(data)} leads en la página {params['page']}. Total acumulado: {len(all_leads)}.")
+                
+                # Si no hay más datos, salimos del bucle
+                if not data:
+                    break
+                
+                # Pasar a la siguiente página
+                params['page'] += 1
+            elif response.status_code == 204:  # No Content, salimos del bucle
+                print(f"No se encontraron más leads. Código de respuesta: {response.status_code}")
+                break
+            else:
+                print(f"Error al obtener los leads filtrados: {response}")
+                break
+
+        # Aplicar filtro de fecha en Python si se especifica
+        if fecha_creacion:
+            all_leads = [lead for lead in all_leads if lead.get('Fecha_creacion') and lead['Fecha_creacion'] > fecha_creacion]
+            print(f"Se filtraron {len(all_leads)} leads después de aplicar el filtro de fecha.")
+        
+        # Limitar la cantidad total después de filtrar
+        if limit:
+            all_leads = all_leads[:limit]
+            print(f"Se limitaron los leads a los primeros {limit} registros después de aplicar los filtros.")
+
+        return all_leads
+
+

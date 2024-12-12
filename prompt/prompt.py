@@ -11,7 +11,7 @@ def prompt_estado_cliente(estado):
         **Tono: Empático y accesible**  
         El cliente está en proceso de seguimiento y tiene dudas que necesitan ser aclaradas. Brinda respuestas claras y comprensivas, mostrando disposición para responder cualquier otra consulta que tenga, creando un ambiente de confianza y comodidad.
         """
-    elif estado == "interesados":
+    elif estado == "interesado":
         return f"""
         **Tono: Informativo y alentador**  
         El cliente ha mostrado interés en nuestros servicios y busca más información. Dale detalles adicionales de manera concisa, resaltando los beneficios de agendar una consulta para aclarar sus inquietudes y avanzar en el proceso.
@@ -120,8 +120,13 @@ def prompt_lead_estado_zoho(lead):
         Devuelve el siguiente resultado en el formato: "estado del cliente" - "mensaje personalizado" (si hay mensaje).
     """
 
-def prompt_consulta_v4(cliente):
+def prompt_consulta_v4(cliente,cliente_nuevo,campania):
     prompt_estado = prompt_estado_cliente(cliente["estado"])
+    if cliente_nuevo:
+        prompt_personal = f""" Campaña : {campania}"""
+    else:
+        prompt_personal = f""" {prompt_estado} """
+
     return f"""
 Eres una asesora del Instituto Facial y Capilar (IFC) en una conversación por WhatsApp. Te llamas Sofía, eres una asesora especializada y estás encantada de poder ayudar. El cliente ya ha mostrado interés en los servicios. Inicias la conversación de manera casual y amistosa, preguntando si necesita más información, resolver dudas o agendar una cita. Usa un tono respetuoso y profesional, pero casual y natural, como en una conversación común de WhatsApp. Emplea emojis, abreviaciones y expresiones como "Mmm..." o "Okey", manteniendo la interacción breve y amena.
 
@@ -261,7 +266,7 @@ La unidad folicular tiene un costo de 1.7 soles por folículo trasplantado.
 
 ### **A este cliente en particular, considera esto**:
 
-{prompt_estado}
+{prompt_personal}
 
 ### **Conversación actual**:
 

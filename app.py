@@ -33,7 +33,7 @@ zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localh
 
 # Función para enviar la respuesta al cliente después del retardo
 @celery.task
-def enviar_respuesta(celular, cliente_nuevo):
+def enviar_respuesta(celular, cliente_nuevo, profileName):
     print("Enviando respuesta a:", celular)
 
     # Inicializo los componentes dentro de la tarea
@@ -58,9 +58,18 @@ def enviar_respuesta(celular, cliente_nuevo):
         celular=cliente["celular"],
         email= cliente.get("email", None) or None
     )    
+
     # Obtener cliente por id
     cliente_mysql = dbMySQLManager.obtener_cliente(cliente_id_mysql)
+    if cliente_mysql["nombre"] == "":
+        cliente_mysql["nombre"] = profileName
+        dbMySQLManager.actualizar_nombre_cliente(cliente_id_mysql, profileName)
     estado_actual = cliente_mysql['estado']
+    cliente_nuevo = estado_actual=="nuevo"
+    if cliente_nuevo:
+        # asociarlo a la nueva campaña
+        dbMySQLManager.marcar_bound(cliente_id_mysql,True)
+        campania = "Campaña de bienvenida"       
     dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id_mysql, datetime.now())
     # Verificar si existe una conversación activa en MySQL para el cliente
     conversacion_mysql = dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql)
@@ -111,7 +120,7 @@ def enviar_respuesta(celular, cliente_nuevo):
                         dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
                     else:
                         print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
-                    response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
+                    response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history,cliente_nuevo,campania)
                 elif intencion_list[0] == 2:
                     if len(intencion_list) > 1:
                         print("Ingreso a la intencion 2")
@@ -142,7 +151,7 @@ def enviar_respuesta(celular, cliente_nuevo):
                     else:
                         print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")             
                     print("Fecha y hora de la cita:", intencion_list[1].lstrip())
-                    reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente['nombre']}",duration_minutes=30)
+                    reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente_mysql['nombre']}",duration_minutes=30)
                     if not reserva_cita:
                         response_message = f"""{{"mensaje": "Hubo un error al reservar la cita. Por favor, intenta nuevamente."}}"""
                     elif reserva_cita == "Horario no disponible":
@@ -242,6 +251,11 @@ def enviar_respuesta(celular, cliente_nuevo):
 @app.route('/bot', methods=['POST'])
 def whatsapp_bot():
     try:
+        print("RESPUESTA DE TWILIO: ", request)
+        print("RESPUESTA DE TWILIO FORM: ", request.form)
+        print("RESPUESTA DE TWILIO BODY: ", request.form.get('Body'))
+        print("Profile Name: ", request.form.get('ProfileName'))
+        profileName = request.form.get('ProfileName')
         incoming_msg = request.form.get('Body').lower()
         sender = request.form.get('From')
         celular = sender.split('whatsapp:')[1]
@@ -268,7 +282,7 @@ def whatsapp_bot():
         print("Interacción del cliente guardada en la conversación actual.")         
 
         # Llama a la tarea de Celery con un retraso de 2 segundos
-        enviar_respuesta.apply_async(args=[celular, cliente_nuevo], countdown=2)
+        enviar_respuesta.apply_async(args=[celular, cliente_nuevo,profileName], countdown=2)
         print("Tarea de Celery programada para el cliente:", celular)
 
         return 'OK', 200

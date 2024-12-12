@@ -45,7 +45,7 @@ class DataBaseMySQLManager:
         """Verifica si un cliente ya existe en la base de datos usando el número de celular."""
         return self.obtener_id_cliente_por_celular(celular) is not None
 
-    def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email,estado="activo"):
+    def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email,estado="nuevo"):
         self._reconnect_if_needed()
         """Inserta un nuevo cliente en la tabla de clientes si no existe ya."""
         if not self.existe_cliente_por_celular(celular):
@@ -112,6 +112,14 @@ class DataBaseMySQLManager:
         cursor = self.connection.cursor(dictionary=True)
         query = "SELECT * FROM citas WHERE cliente_id = %s"
         cursor.execute(query, (cliente_id,))
+        return cursor.fetchall()
+    
+    def obtener_citas_por_estado(self, estado_cita):
+        self._reconnect_if_needed()
+        """Obtiene todas las citas en un estado específico."""
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM citas WHERE estado_cita = %s"
+        cursor.execute(query, (estado_cita,))
         return cursor.fetchall()
 
     def insertar_pago(self, cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago="pendiente"):

@@ -230,3 +230,53 @@ class GoogleCalendarManager:
         except Exception as e:
             print(f"Error al reservar cita: {e}")
             return None
+        
+    def eliminar_evento_por_rango_horario(self, fecha, hora_inicio, duracion_minutos=30):
+        """
+        Elimina un evento en Google Calendar basado en la fecha y hora de inicio proporcionadas.
+        
+        :param fecha: Fecha del evento en formato "YYYY-MM-DD".
+        :param hora_inicio: Hora de inicio del evento en formato "HH:MM".
+        :param duracion_minutos: Duración del evento en minutos (por defecto, 30 minutos).
+        :return: True si se eliminó un evento, False si no se encontró ninguno.
+        """
+        try:
+            # Configurar la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+
+            # Convertir la fecha y la hora de inicio a un objeto datetime
+            fecha_obj = dt.datetime.strptime(fecha, "%Y-%m-%d")
+            hora_inicio_obj = dt.datetime.strptime(hora_inicio, "%H:%M").time()
+            inicio = lima_tz.localize(dt.datetime.combine(fecha_obj, hora_inicio_obj))
+
+            # Calcular la hora de fin sumando la duración
+            fin = inicio + dt.timedelta(minutes=duracion_minutos)
+
+            # Listar eventos en el rango horario
+            print(f"Buscando eventos entre {inicio} y {fin} en Google Calendar...")
+            events_result = self.service.events().list(
+                calendarId=self.CALENDAR_ID,
+                timeMin=inicio.isoformat(),
+                timeMax=fin.isoformat(),
+                singleEvents=True,
+                orderBy="startTime"
+            ).execute()
+
+            events = events_result.get("items", [])
+            if not events:
+                print(f"No se encontraron eventos entre {inicio} y {fin}.")
+                return False
+
+            # Eliminar eventos encontrados
+            for event in events:
+                self.service.events().delete(
+                    calendarId=self.CALENDAR_ID,
+                    eventId=event["id"]
+                ).execute()
+                print(f"Evento eliminado: {event['summary']} (ID: {event['id']})")
+
+            return True
+
+        except Exception as e:
+            print(f"Error al eliminar eventos entre {fecha} {hora_inicio}: {e}")
+            return False
