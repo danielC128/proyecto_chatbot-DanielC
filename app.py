@@ -134,7 +134,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                         try:
                             horarios_disponibles = calendar.listar_horarios_disponibles(intencion_list[1].strip())
                             print("Horarios disponibles:", horarios_disponibles)
-                            response_message = openai.consultaHorarios(cliente_mysql,horarios_disponibles,conversation_actual,conversation_history,intencion_list[1])
+                            response_message = openai.consultaHorarios(cliente_mysql,horarios_disponibles,conversation_actual,conversation_history,intencion_list[1],cliente_nuevo,campania)
                         except Exception as e:
                             print("Error al obtener horarios disponibles:", e)
                             horarios_disponibles = []
@@ -159,7 +159,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                         response_message = f"""{{"mensaje": "Lo siento, el horario seleccionado no está disponible. Por favor, selecciona otro horario."}}"""
                     else:
                         print("Cita reservada:", reserva_cita)
-                        response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history)
+                        response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history,cliente_nuevo,campania)
                 
                         fecha_cita = datetime.fromisoformat(reserva_cita["start"]["dateTime"]).strftime('%Y-%m-%d %H:%M:%S')
                         # Registrar la cita en MySQL y vincularla con la conversación activa
@@ -183,7 +183,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                         dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
                     else:
                         print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
-                    response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history)
+                    response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history,cliente_nuevo,campania)
 
                 elif intencion_list[0] == 5:
                     print("Ingreso a la intencion 5")
@@ -192,7 +192,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     dbMongoManager.editar_cliente_por_celular(cliente["celular"], cliente["nombre"])
                     dbMySQLManager.actualizar_nombre_cliente(cliente_id_mysql, cliente["nombre"])
                     #dbMySQLManager.
-                    response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history)
+                    response_message = openai.consulta(cliente_mysql,conversation_actual, conversation_history,cliente_nuevo,campania)
                 elif intencion_list[0] == 6:
                     if len(intencion_list) > 2:
                         categoria = intencion_list[1].strip()
@@ -204,7 +204,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                             dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, 'no interesado')
                         else:
                             print(f"No se actualiza el estado desde {estado_actual} a no interesado.")
-                        response_message = openai.consulta(cliente_mysql, conversation_actual, conversation_history)
+                        response_message = openai.consulta(cliente_mysql, conversation_actual, conversation_history,cliente_nuevo,campania)
                     else:
                         raise Exception("Falta información en la intención 6")
                 
