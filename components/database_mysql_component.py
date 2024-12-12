@@ -368,3 +368,12 @@ class DataBaseMySQLManager:
         
         print(f"Pago agregado y cita {cita_id} confirmada para el cliente {cliente_id}.")
         return pago_id
+    
+    def marcar_bound(self, cliente_id, bound):
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+        query = "UPDATE clientes SET bound = %s WHERE cliente_id = %s"
+        cursor.execute(query, (bound, cliente_id))
+        self.connection.commit()
+        cursor.close()
+        print(f"Cliente {cliente_id} marcado como bound={bound}.")
