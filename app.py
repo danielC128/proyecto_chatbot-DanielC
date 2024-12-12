@@ -66,6 +66,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
         dbMySQLManager.actualizar_nombre_cliente(cliente_id_mysql, profileName)
     estado_actual = cliente_mysql['estado']
     cliente_nuevo = estado_actual=="nuevo"
+    campania = "Campaña de seguimiento"
     if cliente_nuevo:
         # asociarlo a la nueva campaña
         dbMySQLManager.marcar_bound(cliente_id_mysql,True)
