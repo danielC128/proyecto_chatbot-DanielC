@@ -280,3 +280,65 @@ class GoogleCalendarManager:
         except Exception as e:
             print(f"Error al eliminar eventos entre {fecha} {hora_inicio}: {e}")
             return False
+
+
+    def actualizar_evento_a_confirmado(self, fecha, hora_inicio):
+        """
+        Busca un evento en Google Calendar dado una fecha y hora de inicio y actualiza
+        su summary reemplazando la palabra "reservada" por "confirmada".
+
+        :param fecha: Fecha del evento en formato "YYYY-MM-DD".
+        :param hora_inicio: Hora de inicio del evento en formato "HH:MM".
+        :return: True si se actualizó un evento, False si no se encontró ninguno o hubo un error.
+        """
+        try:
+            # Configurar la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+
+            # Convertir la fecha y la hora de inicio a un objeto datetime
+            fecha_obj = dt.datetime.strptime(fecha, "%Y-%m-%d")
+            hora_inicio_obj = dt.datetime.strptime(hora_inicio, "%H:%M").time()
+            inicio = lima_tz.localize(dt.datetime.combine(fecha_obj, hora_inicio_obj))
+
+            # Calcular la hora de fin sumando la duración
+            fin = inicio + dt.timedelta(minutes=30)
+
+            # Listar eventos en el rango horario
+            print(f"Buscando eventos entre {inicio} y {fin} en Google Calendar...")
+            events_result = self.service.events().list(
+                calendarId=self.CALENDAR_ID,
+                timeMin=inicio.isoformat(),
+                timeMax=fin.isoformat(),
+                singleEvents=True,
+                orderBy="startTime"
+            ).execute()
+
+            events = events_result.get("items", [])
+            if not events:
+                print(f"No se encontraron eventos entre {inicio} y {fin}.")
+                return False
+
+            # Actualizar el primer evento encontrado
+            for event in events:
+                summary = event.get("summary", "")
+                if "reservada" in summary:
+                    # Reemplazar "reservada" por "confirmada"
+                    nuevo_summary = summary.replace("reservada", "confirmada")
+                    event["summary"] = nuevo_summary
+
+                    # Actualizar el evento en Google Calendar
+                    updated_event = self.service.events().update(
+                        calendarId=self.CALENDAR_ID,
+                        eventId=event["id"],
+                        body=event
+                    ).execute()
+
+                    print(f"Evento actualizado: {updated_event['summary']} (ID: {updated_event['id']})")
+                    return True
+
+            print("No se encontró ningún evento con la palabra 'reservada' en el summary.")
+            return False
+
+        except Exception as e:
+            print(f"Error al actualizar el evento: {e}")
+            return False

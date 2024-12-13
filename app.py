@@ -69,6 +69,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
     campania = "Campaña de seguimiento"
     if cliente_nuevo:
         # asociarlo a la nueva campaña
+        cliente_mysql["bound"] = True
         dbMySQLManager.marcar_bound(cliente_id_mysql,True)
         campania = "Campaña de bienvenida"       
     dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id_mysql, datetime.now())
@@ -687,6 +688,24 @@ def culqi_webhook():
                     metodo_pago = "link de pago"
                     dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id, monto, metodo_pago)
                     
+                    # marcar cita en calendar como  "Cita confirmada para {cliente_mysql['nombre']}"
+                    cita = dbMySQLManager.obtener_cita_mas_cercana(cliente_id)
+
+                    fecha_cita = cita['fecha_cita']  # Formato 'YYYY-MM-DD HH:MM:SS'
+
+                    # Formatear la fecha y hora para el método de confirmacion
+                    fecha = fecha_cita.strftime("%Y-%m-%d")
+                    hora_inicio = fecha_cita.strftime("%H:%M")
+
+                    print(f"Procesando cita agendada: {fecha} {hora_inicio} del cliente {cita["cliente_id"]}")
+
+                    # Llamar al método para editar el evento
+                    evento_editado = calendar.actualizar_evento_a_confirmado(fecha, hora_inicio)
+                    if evento_editado:
+                        print("Evento confirmado exitosamente.")
+                    else:
+                        print("No se encontró ningún evento en el rango especificado.")                    
+
                     # Enviar mensaje de confirmación al cliente
                     response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
                     twilio.send_message(phone_number, response_message)

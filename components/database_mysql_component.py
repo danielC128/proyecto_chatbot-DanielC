@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
+import pytz
 
 class DataBaseMySQLManager:
     def __init__(self):
@@ -377,3 +378,43 @@ class DataBaseMySQLManager:
         self.connection.commit()
         cursor.close()
         print(f"Cliente {cliente_id} marcado como bound={bound}.")
+
+
+    def obtener_cita_mas_cercana(self, cliente_id):
+        """
+        Obtiene la cita más cercana para un cliente en estado 'agendada'
+        y cuya fecha_cita sea mayor que la fecha actual en la zona horaria de Lima.
+
+        :param cliente_id: ID del cliente.
+        :return: La cita más cercana en estado 'agendada' o None si no se encuentra ninguna.
+        """
+        try:
+            # Configurar la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+            ahora = datetime.now(lima_tz)
+
+            self._reconnect_if_needed()
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Query para buscar la cita más cercana
+            query = """
+                SELECT * FROM citas
+                WHERE cliente_id = %s AND estado_cita = 'agendada' AND fecha_cita > %s
+                ORDER BY fecha_cita ASC
+                LIMIT 1
+            """
+            cursor.execute(query, (cliente_id, ahora))
+            cita = cursor.fetchone()
+            cursor.close()
+
+            if cita:
+                print(f"Cita más cercana encontrada: {cita}")
+            else:
+                print("No se encontró ninguna cita agendada futura para este cliente.")
+
+            return cita
+
+        except Exception as e:
+            print(f"Error al obtener la cita más cercana: {e}")
+            return None
+    
