@@ -1,6 +1,8 @@
 from components.zoho_component import ZohoCRMManager
 from api_keys.api_keys import client_id_zoho, client_secret_zoho, refresh_token_zoho
 from datetime import datetime, timedelta
+from helpers.helpers import format_number
+import multiprocessing
 
 # Función para verificar si todos los leads tienen el campo de número de celular
 def verificar_celular_en_leads(leads, campo_celular='Mobile'):
@@ -36,6 +38,8 @@ def eliminar_leads_duplicados(leads, campo_celular='Mobile'):
     
     for lead in leads:
         numero_celular = lead.get(campo_celular)
+        if numero_celular:
+            numero_celular = format_number(numero_celular)
         if numero_celular and numero_celular not in seen:
             seen.add(numero_celular)
             leads_sin_duplicados.append(lead)
@@ -47,6 +51,7 @@ zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localh
 # Calcula la fecha de hace 6 meses a partir de hoy
 hace_seis_meses = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
 hace_dos_meses = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
+hace_doces_meses = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
 fecha_fin = datetime.now().strftime('%Y-%m-%d')
 fecha = '2024-09-16'
 
@@ -69,7 +74,7 @@ fecha = '2024-09-16'
 
 print("Fecha hace 6 meses:", hace_seis_meses)
 leads_filtrados = zoho_manager.obtener_leads_filtrados_vf(
-    fecha_creacion=hace_dos_meses,
+    fecha_creacion=hace_doces_meses,
     lead_status=["Interesado", "Promesa Pago"],
 )
 

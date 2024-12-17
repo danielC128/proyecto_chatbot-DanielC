@@ -1,21 +1,20 @@
-from components.calendar_component import GoogleCalendarManager
 from components.database_mysql_component import DataBaseMySQLManager
 from datetime import datetime
 import pytz
 
 # Inicializar los componentes
-calendar = GoogleCalendarManager()
 dbMySQLManager = DataBaseMySQLManager()
 
-def eliminar_citas_agendadas():
+def segundo_aviso_citas_agendadas():
     try:
         # Obtener todas las citas en estado "agendada" de la base de datos
-        citas_agendadas = dbMySQLManager.obtener_citas_por_estado("agendada")
-
-        citas_sin_aviso = [cita for cita in citas_agendadas if cita.get('aviso') == 2]
+        citas_agendadas = dbMySQLManager.obtener_citas_por_estado_con_numero("agendada")
         
+        # Filtrar las citas donde 'aviso' está en 1
+        citas_sin_aviso = [cita for cita in citas_agendadas if cita.get('aviso') == 1]
+
         if not citas_sin_aviso:
-            print("No hay citas en estado 'agendada' para eliminar.")
+            print("No hay citas en estado 'agendada' para dar segundo aviso.")
             return
 
         # Configurar la zona horaria de Lima
@@ -28,6 +27,7 @@ def eliminar_citas_agendadas():
             fecha_creacion = cita['fecha_creacion']  # Formato 'YYYY-MM-DD HH:MM:SS'
             cliente_id = cita['cliente_id']
             cita_id = cita['cita_id']
+            celular = cita['celular']
             
 
             # Asegurar que las fechas están en la zona horaria correcta
@@ -38,32 +38,24 @@ def eliminar_citas_agendadas():
 
             # Verificar si han pasado más de 24 horas desde la fecha de creación
             diferencia_horas = (ahora - fecha_creacion).total_seconds() / 3600
-            if diferencia_horas < 70:
-                print(f"La cita ID: {cita_id} aún no lleva 24 horas desde su creación.")
+            if diferencia_horas < 46:
+                print(f"La cita ID: {cita_id} aún no lleva 46 horas desde su creación.")
                 continue
 
-            # Formatear la fecha y hora para el método de eliminación
+            # Formatear la fecha y hora para el método de primer aviso
             fecha = fecha_cita.strftime("%Y-%m-%d")
             hora_inicio = fecha_cita.strftime("%H:%M")
 
             print(f"Procesando cita agendada: {fecha} {hora_inicio} del cliente {cliente_id}")
              
+
             try:
                 
-                # Usar el método actualizado para eliminar la cita
-                eliminada = calendar.eliminar_evento_por_rango_horario(fecha, hora_inicio)
-                
-                if eliminada:
-                    print(f"Cita eliminada en Google Calendar: {fecha} {hora_inicio} del cliente {cliente_id}")
-                    # Actualizar el estado de la cita en la base de datos
-                    dbMySQLManager.actualizar_estado_cita(cita_id, "eliminada")
-                    dbMySQLManager.actualizar_aviso_cita(cita_id, 3)
-                else:
-                    print(f"No se encontró la cita en Google Calendar: {fecha} {hora_inicio}")
+                dbMySQLManager.actualizar_aviso_cita(cita_id, 2) # 2 - Segundo aviso
             except Exception as e:
-                print(f"Error al eliminar cita {cita_id}: {e}")
+                print(f"Error al dar el segundo aviso de la  cita {cita_id}: {e}")
     except Exception as e:
         print(f"Error al procesar las citas agendadas: {e}")
 
 if __name__ == "__main__":
-    eliminar_citas_agendadas()
+    segundo_aviso_citas_agendadas()

@@ -122,6 +122,20 @@ class DataBaseMySQLManager:
         query = "SELECT * FROM citas WHERE estado_cita = %s"
         cursor.execute(query, (estado_cita,))
         return cursor.fetchall()
+    
+    def obtener_citas_por_estado_con_numero(self, estado_cita):
+        self._reconnect_if_needed()
+        """Obtiene todas las citas en un estado específico junto con el celular del cliente asociado."""
+        cursor = self.connection.cursor(dictionary=True)
+        query = """        
+            SELECT c.cita_id, c.fecha_cita, c.estado_cita, c.motivo, c.fecha_creacion, c.aviso, 
+               cl.cliente_id, cl.nombre, cl.apellido, cl.celular
+            FROM citas c
+            JOIN clientes cl ON c.cliente_id = cl.cliente_id
+            WHERE c.estado_cita = %s
+            """
+        cursor.execute(query, (estado_cita,))
+        return cursor.fetchall()
 
     def insertar_pago(self, cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago="pendiente"):
         self._reconnect_if_needed()
@@ -278,6 +292,14 @@ class DataBaseMySQLManager:
         cursor.execute(sql, (nuevo_estado, cita_id))
         self.connection.commit()
         cursor.close()
+    
+    def actualizar_aviso_cita(self, cita_id, aviso):
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+        sql = "UPDATE citas SET aviso = %s WHERE cita_id = %s"
+        cursor.execute(sql, (aviso, cita_id))
+        self.connection.commit()
+        cursor.close()
 
     def obtener_estado_cliente(self, cliente_id):
         self._reconnect_if_needed()
@@ -418,3 +440,8 @@ class DataBaseMySQLManager:
             print(f"Error al obtener la cita más cercana: {e}")
             return None
     
+    def obtener_clientes_por_filtro(self, filtro):
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM clientes WHERE " + filtro
+        cursor.execute(query)
+        return cursor.fetchall()

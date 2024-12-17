@@ -1,0 +1,73 @@
+Cliente: ????
+Celular: +51904289443
+Estado: promesas de pago
+Conversación:
+1. Cliente: ¡hola! quiero aprovechar el descuento exclusivo por reserva de cita para tratamiento capilar
+   Chatbot: ¡Hola 😊! Soy Sofía, tu asesora del IFC. Claro, podemos agendar tu cita. ¿Prefieres martes, jueves o sábado? 🗓️
+2. Cliente: jueves
+   Chatbot: ¡Perfecto! Para el jueves tengo disponible de 14:30 - 19:00 y de 19:30 - 20:30. ¿Cuál prefieres? 😊
+3. Cliente: 14.30
+   Chatbot: ¡Genial! Tu cita ha sido reservada para el jueves a las 14:30. Aquí tienes el link de pago: https://express.culqi.com/pago/HXHKR025JY. Puedes pagar usando Yape, Plin o tarjetas de crédito/débito. 😊
+--------------------------------------------------
+Cliente: Recy
+Celular: +51966311859
+Estado: interesado
+Conversación:
+1. Cliente: buenas tardes estimado
+   Chatbot: Hola, soy Sofía, tu asesora del Instituto Facial y Capilar, encantada de poder ayudarte agendando una cita o resolviendo tus dudas. Cuéntame, ¿cómo puedo ayudarte?
+2. Cliente: buenas tardes sofia le escribe roger, el motivo que le escribo es para saber que tratamientos tiene para la pérdida de cabello y los costos
+   Chatbot: ¡Hola Roger! Soy Sofía. 😊 Para la pérdida de cabello, ofrecemos el trasplante capilar con técnica FUE. El costo varía entre 4,500 y 6,800 soles. ¿Te gustaría agendar una cita para una evaluación inicial?
+3. Cliente: solo son trasplantes srta, no hay otros métodos como mesoterapia por ejemplo
+   Chatbot: ¡Hola de nuevo, Roger! Además del trasplante FUE, ofrecemos tratamientos de mesoterapia, que podría ser lo que buscas. ¿Te gustaría que agendemos una consulta para explicarte más a fondo? 🤔
+4. Cliente: cual es su dirección?
+   Chatbot: Estamos en Monterrey 355, 4to Piso, Santiago de Surco. 😊 Aquí el enlace de Google Maps para ubicarte: https://maps.app.goo.gl/XG7cet5HEuaUgwrW8. ¿Te gustaría agendar una consulta para más detalles? 📅
+5. Cliente: y cuanto es el costo de la mesoterapia?
+   Chatbot: El costo de la mesoterapia varía según el tratamiento específico, pero suele comenzar alrededor de los 200 soles por sesión. ¿Te gustaría programar una consulta para obtener más información? 😊
+6. Cliente: cuanto esta la consulta srta
+   Chatbot: La consulta inicial cuesta 100 soles, pero tengo una promo especial a 60 soles si pagas online. ¿Te gustaría aprovecharla y agendar? 😉
+--------------------------------------------------
+Cliente: Kevin
+Celular: +51943239885
+Estado: seguimiento
+Conversación:
+1. Cliente: ¡hola! quiero aprovechar el descuento exclusivo por reserva de cita
+   Chatbot: ¡Hola Kevin! Soy Sofía, tu asesora del Instituto Facial y Capilar. 😊 Puedes agendar tu cita con el descuento especial de 40%! ¿Cuándo te gustaría visitarnos?
+--------------------------------------------------
+Cliente: OR
+Celular: +51999699998
+Estado: seguimiento
+Conversación:
+1. Cliente: ¡hola! quiero aprovechar el descuento exclusivo por reserva de cita
+   Chatbot: ¡Hola OR! Soy Sofía, tu asesora del Instituto Facial y Capilar. Con gusto te ayudo con tu reserva. ¿Qué día te viene bien, martes, jueves o sábado?
+2. Cliente: .
+   Chatbot: ¡Entiendo! 😊 Podemos coordinar con el doctor, a veces hay ajustes disponibles. ¿Te gustaría agendar para esta semana o la próxima?
+--------------------------------------------------
+Cliente: Mayke
+Celular: +51956611003
+Estado: seguimiento
+Conversación:
+1. Cliente: ¡hola! quiero aprovechar el descuento exclusivo por reserva de cita
+   Chatbot: 
+2. Cliente: información para mujer por favor
+   Chatbot: ¡Hola Mayke! Soy Sofía, tu asesora del Instituto Facial y Capilar. Claro, también ofrecemos trasplantes capilares para mujeres. ¿Quieres más info o agendamos cita? 😊 | Los trasplantes capilares son una opción viable para mujeres con pérdida de cabello. ¿Te gustaría agendar una cita o tienes más dudas? 🌟
+--------------------------------------------------
+Cliente: Lil ????????????????????❣️????
+Celular: +51996355220
+Estado: seguimiento
+Conversación:
+1. Cliente: ¡hola! quiero aprovechar el descuento exclusivo por reserva de cita
+   Chatbot: ¡Hola, Lil! Soy Sofía, encantada de ayudarte. 😊 ¿Te gustaría agendar una cita esta semana aprovechando el descuento?
+--------------------------------------------------
+Cliente: Kevin
+Celular: +51987197149
+Estado: no interesado
+Conversación:
+1. Cliente: ¡hola! quiero aprovechar el descuento exclusivo por reserva de cita
+   Chatbot: ¡Genial! Soy Sofía, tu asesora del Instituto Facial y Capilar. Tenemos disponibilidad los martes, jueves y sábados. ¿Qué día te gustaría agendar?
+2. Cliente: costo de consulta
+   Chatbot: 
+3. Cliente: y donde están ubicados
+   Chatbot: Hola Kevin, la consulta inicial con descuento es de 60 soles. Estamos en Monterrey 355, Santiago de Surco. ¿Quieres agendar la cita? | ¡Hola Kevin! 😊 La consulta cuesta 100 soles, pero si pagas online, te cuesta solo 60 soles. Estamos en Monterrey 355, 4to Piso, Santiago de Surco. ¿Te vendría bien el próximo martes o jueves?
+4. Cliente: ok reviso mi agenda y me vuelvo a contactar
+   Chatbot: ¡Claro, Kevin! 😊 Aquí estoy para cuando necesites. Si tienes alguna pregunta o duda, no dudes en escribirme. ¡Hasta pronto!
+--------------------------------------------------

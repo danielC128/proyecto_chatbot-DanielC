@@ -2,6 +2,19 @@ import re
 import datetime
 import json
 
+def plantilla_promesa_pago_interesados(nombre):
+    return f"""
+Hola {nombre} 👋✨, sabemos lo importante que es para ti recuperar tu pelo 🧑‍🦱 y tu confianza 💪.
+
+Además, estamos con una promoción especial del 60% de descuento 🤑🎉. ¡Es el momento perfecto para dar el paso! 🚀
+
+Responde este mensaje 📩 y con gusto te ayudamos a agendar tu cita 🗓️.
+
+¡Estamos listos para ayudarte a transformar tu vida! 🌟
+
+Mira este caso de éxito real 📸    
+"""
+
 def json_a_lista(datos):
     # Asumimos que `datos` ya es un diccionario JSON
     resultado = [datos.get("intencion")]
