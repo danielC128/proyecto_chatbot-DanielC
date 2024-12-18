@@ -17,7 +17,6 @@ from components.leader_csv_component import LeadManager
 from components.zoho_component import ZohoCRMManager
 from helpers.helpers import format_number, extraer_json,json_a_lista
 from api_keys.api_keys import client_id_zoho, client_secret_zoho, refresh_token_zoho
-#from components.payments_component import CulqiManager
 
 app = Flask(__name__)
 
@@ -66,12 +65,13 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
         dbMySQLManager.actualizar_nombre_cliente(cliente_id_mysql, profileName)
     estado_actual = cliente_mysql['estado']
     cliente_nuevo = estado_actual=="nuevo"
-    campania = "Campaña de seguimiento"
+    campania = ""
     if cliente_nuevo:
         # asociarlo a la nueva campaña
         cliente_mysql["bound"] = True
         dbMySQLManager.marcar_bound(cliente_id_mysql,True)
-        campania = "Campaña de bienvenida"       
+        campania_registro = dbMySQLManager.asociar_cliente_a_campana_mas_reciente(cliente_id_mysql) # lo asocia a la campania mas reciente que este activa
+        campania = campania_registro["descripcion"] if campania_registro != None else ""  
     dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id_mysql, datetime.now())
     # Verificar si existe una conversación activa en MySQL para el cliente
     conversacion_mysql = dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql)

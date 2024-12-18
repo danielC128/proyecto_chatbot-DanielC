@@ -445,3 +445,71 @@ class DataBaseMySQLManager:
         query = "SELECT * FROM clientes WHERE " + filtro
         cursor.execute(query)
         return cursor.fetchall()
+    
+    def asociar_cliente_a_campana_mas_reciente(self, cliente_id):
+        """
+        Asocia un cliente a la campaña más reciente que esté activa y devuelve los detalles de la campaña.
+
+        Args:
+            cliente_id (int): ID del cliente a asociar.
+
+        Returns:
+            dict: Detalles de la campaña asociada o None si no hay campañas activas.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor(dictionary=True)
+
+        try:
+            # Obtener la campaña activa más reciente
+            query_campana = """
+                SELECT * FROM campañas
+                WHERE estado_campaña = 'activa'
+                ORDER BY fecha_creacion DESC
+                LIMIT 1
+            """
+            cursor.execute(query_campana)
+            campana = cursor.fetchone()
+
+            if not campana:
+                print("No hay campañas activas disponibles.")
+                return None
+
+            campana_id = campana['campaña_id']
+
+            # Verificar si ya existe la asociación
+            query_check = """
+                SELECT * FROM cliente_campaña
+                WHERE cliente_id = %s AND campaña_id = %s
+            """
+            cursor.execute(query_check, (cliente_id, campana_id))
+            existe_asociacion = cursor.fetchone()
+
+            if existe_asociacion:
+                print("El cliente ya está asociado a la campaña más reciente.")
+            else:
+                # Insertar la asociación en la tabla intermedia
+                query_insert = """
+                    INSERT INTO cliente_campaña (cliente_id, campaña_id)
+                    VALUES (%s, %s)
+                """
+                cursor.execute(query_insert, (cliente_id, campana_id))
+
+                # Incrementar el num_clientes de la campaña
+                query_update_num_clientes = """
+                    UPDATE campañas
+                    SET num_clientes = num_clientes + 1
+                    WHERE campaña_id = %s
+                """
+                cursor.execute(query_update_num_clientes, (campana_id,))
+
+                self.connection.commit()
+                print(f"Cliente {cliente_id} asociado a la campaña {campana_id} y num_clientes incrementado.")
+
+            return campana
+
+        except Exception as e:
+            print(f"Error al asociar cliente a la campaña: {e}")
+            return None
+
+        finally:
+            cursor.close()
