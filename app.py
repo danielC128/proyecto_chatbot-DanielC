@@ -144,6 +144,9 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     else:
                         raise Exception("Falta información en la intención 2")
                 elif intencion_list[0] == 3:
+                    if intencion_list[2] == "":
+                        raise Exception("Falta información del nombre en la intención 3")
+
                     print("Ingreso a la intencion 3")
                     nuevo_estado = 'promesas de pago'   
                     if es_transicion_valida(estado_actual, nuevo_estado):
@@ -187,6 +190,8 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history,cliente_nuevo,campania)
 
                 elif intencion_list[0] == 5:
+                    if intencion_list[1] == "":
+                        raise Exception("Falta información del nombre en la intención 5")
                     print("Ingreso a la intencion 5")
                     cliente["nombre"] = intencion_list[1].strip()
                     cliente_mysql["nombre"] = intencion_list[1].strip()

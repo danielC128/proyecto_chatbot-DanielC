@@ -58,7 +58,8 @@ def main():
     mongodb_manager = DataBaseMongoDBManager()
 
     # Definir filtro para clientes
-    filtro = "bound = 1 and nombre not like 'prueba%' and DATE(DATE_SUB(fecha_creacion, INTERVAL 5 HOUR)) = CURDATE();"
+    #filtro = "bound = 1 and nombre not like 'prueba%' and DATE(DATE_SUB(fecha_creacion, INTERVAL 5 HOUR)) = CURDATE();"
+    filtro = "bound = 1 and nombre not like 'prueba%'"
 
     # Obtener todos los clientes de MySQL
     clientes = mysql_manager.obtener_clientes_por_filtro(filtro)
