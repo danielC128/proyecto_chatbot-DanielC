@@ -27,6 +27,9 @@ def json_a_lista(datos):
     if "detalle" in datos:
         resultado.append(datos["detalle"])
 
+    if "nombre" in datos:
+        resultado.append(datos["nombre"])
+
     return resultado
 
 def extraer_json(texto):
