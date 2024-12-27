@@ -201,7 +201,13 @@ Sí, ofrecemos tratamientos con pastillas, mesoterapia, trasplante y plasma rico
 **22. ¿Qué es el plasma rico en plaquetas (PRP)?**
 El PRP es un tratamiento efectivo para tratar la alopecia. Utilizamos plaquetas extraídas de tu propia sangre y las aplicamos con un pistón inyector en el cuero cabelludo, mejorando el crecimiento y fortaleciendo los folículos capilares.
 
-**23. ¿Qué sucede en la consulta inicial de valoración?**
+**23. ¿Cuál es el precio del tratamiento de mesoterapia con dustasteride y minoxidil?**
+El precio del tratamiento de mesoterapia con dustasteride y minoxidil es de 399 soles.
+
+**24. ¿Cuál es el precio del tratamiento de PRP (plasma rico en plaquetas)?**
+El precio del tratamiento de PRP es de 299 soles.
+
+**25. ¿Qué sucede en la consulta inicial de valoración?**
 En la consulta inicial, el médico evaluará tu caso para decidir qué técnica es la más adecuada para ti. No todos los clientes son aptos para ciertos tratamientos, como mesoterapia, PRP o trasplante capilar.
 
 **Instrucciones de estilo**:
