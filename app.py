@@ -31,6 +31,7 @@ zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localh
 #culqi = CulqiManager()
 
 # Función para enviar la respuesta al cliente después del retardo
+@app.task(time_limit=360)
 @celery.task
 def enviar_respuesta(celular, cliente_nuevo, profileName):
     print("Enviando respuesta a:", celular)
@@ -72,6 +73,8 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
         dbMySQLManager.marcar_bound(cliente_id_mysql,True)
         campania_registro = dbMySQLManager.asociar_cliente_a_campana_mas_reciente(cliente_id_mysql) # lo asocia a la campania mas reciente que este activa
         campania = campania_registro["descripcion"] if campania_registro != None else ""  
+
+    cliente_nuevo = cliente_mysql["bound"]
     dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id_mysql, datetime.now())
     # Verificar si existe una conversación activa en MySQL para el cliente
     conversacion_mysql = dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql)
@@ -147,14 +150,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     if intencion_list[2] == "":
                         raise Exception("Falta información del nombre en la intención 3")
 
-                    print("Ingreso a la intencion 3")
-                    nuevo_estado = 'promesas de pago'   
-                    if es_transicion_valida(estado_actual, nuevo_estado):
-                        cliente_mysql["estado"] = 'promesas de pago'
-                        dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
-                        dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
-                    else:
-                        print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")             
+                    print("Ingreso a la intencion 3")             
                     print("Fecha y hora de la cita:", intencion_list[1].lstrip())
                     reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente_mysql['nombre']}",duration_minutes=30)
                     if not reserva_cita:
@@ -162,6 +158,14 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     elif reserva_cita == "Horario no disponible":
                         response_message = f"""{{"mensaje": "Lo siento, el horario seleccionado no está disponible. Por favor, selecciona otro horario."}}"""
                     else:
+                        nuevo_estado = 'promesas de pago'   
+                        if es_transicion_valida(estado_actual, nuevo_estado):
+                            cliente_mysql["estado"] = 'promesas de pago'
+                            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
+                            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
+                        else:
+                            print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
+
                         print("Cita reservada:", reserva_cita)
                         response_message = openai.consultaCitareservada(cliente_mysql,reserva_cita,conversation_actual, conversation_history,cliente_nuevo,campania)
                 

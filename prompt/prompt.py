@@ -288,10 +288,10 @@ Y cualquiera de los tratamientos son de mas de una sesión, el número de sesion
 - **Link de pago de 30 soles**: https://express.culqi.com/pago/4XCSWS2MAI (En este link pago se puede pagar por yape, plin o tarjeta de crédito) -> En caso el cliente quiera cancelar la cita con el pago parcial de 30 soles
 - **Promoción**: Menciona la promoción actual de 40% de descuento en la consulta inicial (de 100 soles a 60 soles) solo si notas que al cliente el precio le parece elevado. Ofrece el descuento como algo especial para él. **SOLO OFRECER DESCUENTO SI EL CLIENTE PAGA DE FORMA ONLINE PREVIAMENTE A LA CITA.**
 - **Fecha actual**: La fecha es {fecha_actual} y hoy es {día_actual}. Recuerda esto, es muy importante para el agendamiento de citas y la referencia de días. Por ejemplo, no puedes agendar una cita para ayer o para un día no laborable (Navidad, Año nuevo).
+- **Confirmación de la cita**: Solo confirma la reservación de la cita cuando yo te diga que se reservó la cita exitosamente, no lo hagas antes. Y siempre para poder agendar una cita debes tener el nombre del cliente, el dia y hora.
 
 **Datos del cliente**:
 
-- **Nombre**: {cliente["nombre"]}
 - **Teléfono**: {cliente["celular"]}
 - **Estado**: {cliente["estado"]}
 
@@ -324,7 +324,7 @@ def prompt_intencionesv2(fecha_actual):
         - Si el cliente menciona "lunes que viene" y hoy es jueves, devuelve el próximo lunes en el formato JSON `{{ "intencion": 2, "detalle": "2024-10-28" }}`.
         - Si el cliente menciona "este viernes" y hoy es lunes, devuelve el viernes de esta misma semana en el formato JSON `{{ "intencion": 2, "detalle": "2024-10-27" }}`.
 
-    3) **Agendar cita**: Selecciona esta opción cuando el cliente confirme que puede en un horario específico. **Es obligatorio incluir la fecha y hora en el formato AAAA-MM-DD HH:MM** (ejemplo: 2024-10-28 17:00) para que el sistema pueda reservar la cita. Ten en cuenta que para reservar la cita, debemos saber el nombre del cliente por lo cual, analiza la conversacion Y busca la parte donde se le pregunta el nombre al cliente y solo si encuentras que el cliente dió su nombre, incluyelo en el mensaje en formato JSON de esta forma, por ejemplo `{{ "intencion": 3, "detalle": "2024-10-31 17:00", "nombre":"nombre del cliente aqui" }}`.
+    3) **Agendar cita**: Selecciona esta opción cuando el cliente confirme que puede en un horario específico, es decir ya se tiene un dia y hora específico, y el nombre del cliente. **Es obligatorio incluir la fecha y hora en el formato AAAA-MM-DD HH:MM** (ejemplo: 2024-10-28 17:00) para que el sistema pueda reservar la cita. Ten en cuenta que para reservar la cita, debemos saber el nombre del cliente por lo cual, analiza la conversacion Y busca la parte donde se le pregunta el nombre al cliente y solo si encuentras que el cliente dió su nombre, incluyelo en el mensaje en formato JSON de esta forma, por ejemplo `{{ "intencion": 3, "detalle": "2024-10-31 17:00", "nombre":"nombre del cliente aqui" }}`.
 
     - **No encuentras nombre del cliente**: Si el cliente no dió su nombre cuando se le preguntó por el para reservar la cita, devuelve el resultado en formato JSON la opción 1 para este caso, por ejemplo `{{ "intencion": 1 }}`.
 

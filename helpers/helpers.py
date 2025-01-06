@@ -40,6 +40,7 @@ def extraer_json(texto):
     match = re.search(patron, texto)
     if match:
         # Convertir la cadena JSON capturada en un diccionario
+        print("JSON detectado:", match.group())
         try:
             resultado = json.loads(match.group())
             return resultado
