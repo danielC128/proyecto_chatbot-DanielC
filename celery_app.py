@@ -7,6 +7,7 @@ def make_celery(app_name, broker_url, backend_url):
         imports=['app'],  # Importa solo las tareas, no toda la app Flask
         task_acks_late=True,
         worker_max_tasks_per_child=5,
+        task_time_limit=400,
     )
     return celery
 

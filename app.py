@@ -31,7 +31,6 @@ zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localh
 #culqi = CulqiManager()
 
 # Función para enviar la respuesta al cliente después del retardo
-@app.task(time_limit=360)
 @celery.task
 def enviar_respuesta(celular, cliente_nuevo, profileName):
     print("Enviando respuesta a:", celular)
