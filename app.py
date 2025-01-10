@@ -698,6 +698,16 @@ def culqi_webhook():
                     
                     # marcar cita en calendar como  "Cita confirmada para {cliente_mysql['nombre']}"
                     cita = dbMySQLManager.obtener_cita_mas_cercana(cliente_id)
+                    if not cita:
+                        print("No se encontró una cita para el cliente:", phone_number)
+                        # Enviar mensaje de confirmación al cliente
+                        response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
+                        twilio.send_message(phone_number, response_message)
+
+                        # Actualizar fechas de última interacción
+                        fecha_actual = datetime.now()
+                        dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
+                        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(phone_number, response_message)
 
                     fecha_cita = cita['fecha_cita']  # Formato 'YYYY-MM-DD HH:MM:SS'
 

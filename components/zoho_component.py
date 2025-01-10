@@ -93,7 +93,7 @@ class ZohoCRMManager:
 
         response = self._request_with_token_refresh("GET", url, params=params)
         if response.status_code == 200:
-            print("Respuesta: ", response.json())
+            #print("Respuesta: ", response.json())
             leads = response.json().get('data', [])
             print(f"Se obtuvieron {len(leads)} leads.")
             return leads
@@ -413,5 +413,112 @@ class ZohoCRMManager:
             print(f"Se limitaron los leads a los primeros {limit} registros después de aplicar los filtros.")
 
         return all_leads
+    
+    def obtener_todos_leads(self, limit= None):
+        """
+        Recupera todos los leads de Zoho CRM sin aplicar filtros.
+        
+        Maneja la paginación para asegurarse de obtener todos los registros.
+        
+        :return: Lista completa de todos los leads.
+        """
+        url = f"{self.api_base_url}/Leads"
+        per_page = 200  # Máximo permitido por Zoho en una sola solicitud
+        page = 1
+        todos_los_leads = []
 
+        # Validar el parámetro 'limit'
+        if limit is not None:
+            if not isinstance(limit, int) or limit <= 0:
+                raise ValueError("El parámetro 'limit' debe ser un entero positivo o None.")
 
+        while True:
+            params = {
+                'per_page': per_page,
+                'page': page
+            }
+            print(f"Solicitando página {page} con {per_page} leads por página.")
+            response = self._request_with_token_refresh("GET", url, params=params)
+            
+            if response.status_code == 200:
+                data = response.json().get('data', [])
+                if not data:
+                    print("No hay más leads para recuperar.")
+                    break
+                # Determinar cuántos leads agregar sin exceder el límite
+                if limit is not None:
+                    remaining = limit - len(todos_los_leads)
+                    if remaining <= 0:
+                        print("Se ha alcanzado el límite de leads especificado.")
+                        break
+                    # Si la cantidad de leads recuperados en esta página excede el restante, recortar
+                    if len(data) > remaining:
+                        data = data[:remaining]
+                todos_los_leads.extend(data)
+                print(f"Se obtuvieron {len(data)} leads en la página {page}. Total acumulado: {len(todos_los_leads)}.")
+                page += 1
+                # Verificar si se ha alcanzado el límite
+                if limit is not None and len(todos_los_leads) >= limit:
+                    print("Se ha alcanzado el límite de leads especificado.")
+                    break
+            else:
+                print(f"Error al obtener los leads: {response.text}")
+                break
+
+        print(f"Total de leads recuperados: {len(todos_los_leads)}")
+        return todos_los_leads
+
+    def obtener_todos_contacts(self, limit=None):
+        """
+        Recupera todos los contactos de Zoho CRM aplicando un límite opcional.
+        
+        Maneja la paginación para asegurarse de obtener todos los registros hasta el límite especificado.
+        
+        :param limit: (int, opcional) Número máximo de contactos a recuperar. Si es None, recupera todos los contactos.
+        :return: Lista de contactos recuperados.
+        """
+        url = f"{self.api_base_url}/Contacts"
+        per_page = 200  # Máximo permitido por Zoho en una sola solicitud
+        page = 1
+        todos_los_contacts = []
+        
+        # Validar el parámetro 'limit'
+        if limit is not None:
+            if not isinstance(limit, int) or limit <= 0:
+                raise ValueError("El parámetro 'limit' debe ser un entero positivo o None.")
+        
+        while True:
+            params = {
+                'per_page': per_page,
+                'page': page
+            }
+            print(f"Solicitando página {page} con {per_page} contactos por página.")
+            response = self._request_with_token_refresh("GET", url, params=params)
+            
+            if response.status_code == 200:
+                data = response.json().get('data', [])
+                if not data:
+                    print("No hay más contactos para recuperar.")
+                    break
+                # Determinar cuántos contactos agregar sin exceder el límite
+                if limit is not None:
+                    remaining = limit - len(todos_los_contacts)
+                    if remaining <= 0:
+                        print("Se ha alcanzado el límite de contactos especificado.")
+                        break
+                    # Si la cantidad de contactos recuperados en esta página excede el restante, recortar
+                    if len(data) > remaining:
+                        data = data[:remaining]
+                todos_los_contacts.extend(data)
+                print(f"Se obtuvieron {len(data)} contactos en la página {page}. Total acumulado: {len(todos_los_contacts)}.")
+                page += 1
+                # Verificar si se ha alcanzado el límite
+                if limit is not None and len(todos_los_contacts) >= limit:
+                    print("Se ha alcanzado el límite de contactos especificado.")
+                    break
+            else:
+                print(f"Error al obtener los contactos: {response.text}")
+                break
+
+        print(f"Total de contactos recuperados: {len(todos_los_contacts)}")
+        return todos_los_contacts
