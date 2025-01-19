@@ -301,301 +301,6 @@ def whatsapp_bot():
         print("Error en whatsapp_bot:", e)
         return "Error interno del servidor", 500
 
-@app.route('/iniciar-conversacion-leads', methods=['POST'])
-def iniciar_conversacion_leads():
-    while True:
-        print("Iniciando conversación con leads...")
-        # Obtener los leeds de la base de datos
-        leeds = leaderManager.get_unanalyzed_leads(limit=10)
-        for lead in leeds:
-            if lead["Mobile"] == "":
-                continue            
-            # Buscar en la base de datos con su número de teléfono móvil
-            cliente = dbMongoManager.obtener_cliente_por_celular(lead["Mobile"])
-            if not cliente:
-                # Si el cliente no existe, crear un nuevo cliente
-                cliente = dbMongoManager.crear_cliente(lead["Lead Name"],lead["Mobile"],lead["Record Id"])
-                # Crear cliente en MySQL
-                cliente_id_mysql = dbMySQLManager.insertar_cliente(
-                    documento_identidad=None,
-                    tipo_documento=None,
-                    nombre=lead["Lead Name"],
-                    apellido="",
-                    celular=lead["Mobile"],
-                    email=lead.get("Email", None)
-                )            
-                print("Cliente creado:", cliente)
-                # Crear conversación activa en MongoDB y MySQL
-                dbMongoManager.crear_conversacion_activa(lead["Mobile"])
-                conversacion_id_mysql = dbMySQLManager.insertar_conversacion(
-                    cliente_id=cliente_id_mysql,
-                    mensaje="Inicio de conversación por lead",
-                    tipo_conversacion="activa",
-                    resultado=None,
-                    estado_conversacion="activa"
-                )
-                
-                # Crear un lead en MySQL
-                lead_id_mysql = dbMySQLManager.insertar_lead(
-                    cliente_id=cliente_id_mysql,
-                    fecha_contacto=datetime.now(),
-                    prioridad_lead=lead.get("Prioridad", 1),
-                    lead_source=lead.get("Lead Source", "Desconocido"),
-                    campaña=lead.get("Campaña", ""),
-                    canal_lead=lead.get("Canal Lead", "Desconocido"),
-                    estado_lead=lead.get("Lead Status", "nuevo"),
-                    notas="Lead generado automáticamente"
-                )                
-            else:
-                print("Cliente encontrado:", cliente)
-
-                cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(lead["Mobile"])
-
-                # Si no hay conversación activa en MySQL, crearla
-                if not dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql):
-                    dbMongoManager.crear_conversacion_activa(lead["Mobile"])
-                    dbMySQLManager.insertar_conversacion(
-                        cliente_id=cliente_id_mysql,
-                        mensaje="Inicio de conversación por lead",
-                        tipo_conversacion="activa",
-                        resultado=None,
-                        estado_conversacion="activa"
-                    )
-                                # Crear un lead en MySQL
-                lead_id_mysql = dbMySQLManager.insertar_lead(
-                    cliente_id=cliente_id_mysql,
-                    fecha_contacto=datetime.now(),
-                    prioridad_lead=lead.get("Prioridad", 1),
-                    lead_source=lead.get("Lead Source", "Desconocido"),
-                    campaña=lead.get("Campaña", ""),
-                    canal_lead=lead.get("Canal Lead", "Desconocido"),
-                    estado_lead=lead.get("Lead Status", "nuevo"),
-                    notas="Lead generado automáticamente"
-                )
-
-            #creamos la interaccion en mongo
-            dbMongoManager.crear_nueva_interaccion_vacia(lead["Mobile"])
-
-            # Obtener el número de teléfono móvil del lead
-            mobile = lead["Mobile"]
-            print("Enviando mensaje a:", mobile)
-            # Obtener el nombre del lead
-            resultado_lead = openai.consultaLead(lead)
-            print("Response resultado_lead lead:", resultado_lead)
-            estado_lead = resultado_lead.split("-")[0].strip().replace('"','')
-
-            response_message = resultado_lead.split("-")[1].strip().replace('"','')
-            twilio.send_message(mobile, response_message)
-            leaderManager.update_lead(lead["Record Id"], "Analizado", "Sí")
-            # Actualizar el estado del cliente segun su lead en MySQL
-            estado_lead = estado_lead.lower()
-            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead)                
-            # Guardar la respuesta en la conversación actual
-            dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
-            dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())            
-            print("Estado del lead:", estado_lead)
-            print("Mensaje de respuesta:", response_message)
-        time.sleep(86400)
-
-
-from datetime import datetime
-import time
-
-@app.route('/iniciar-conversacion-leads-zoho', methods=['POST'])
-def iniciar_conversacion_leads_zoho():
-    if os.path.exists("/tmp/iniciar_conversacion.lock"):
-        print("El hilo de conversación ya está en ejecución. Saltando inicialización.")
-        return
-    with open("/tmp/iniciar_conversacion.lock", "w") as f:
-        f.write("running")
-
-    try:
-        while True:
-            print("Iniciando conversación con leads desde Zoho...")
-
-            # Obtener leads desde ZohoCRMManager
-            leads = zoho_manager.obtener_todos_los_leads(limit=10)  # Llama al método con un límite de 10 leads
-            for lead in leads:
-                if not lead.get("Mobile"):
-                    continue
-
-                # Buscar en la base de datos MongoDB usando el número de teléfono del lead
-                cliente = dbMongoManager.obtener_cliente_por_celular(format_number(lead["Mobile"]))
-                if not cliente:
-                    # Si el cliente no existe en MongoDB, crear nuevo cliente
-                    cliente = dbMongoManager.crear_cliente(lead.get("First_Name", "") + " " + lead.get("Last_Name", ""), format_number(lead["Mobile"]), lead["id"])
-
-                    # Crear cliente en MySQL
-                    cliente_id_mysql = dbMySQLManager.insertar_cliente(
-                        documento_identidad=None,
-                        tipo_documento=None,
-                        nombre=lead.get("First_Name", ""),
-                        apellido=lead.get("Last_Name", ""),
-                        celular=format_number(lead["Mobile"]),
-                        email=lead.get("Email", None),
-                        estado="contactado"
-                    )
-                    print("Cliente creado:", cliente)
-
-                    # Crear conversación activa en MongoDB y MySQL
-                    dbMongoManager.crear_conversacion_activa(format_number(lead["Mobile"]))
-                    conversacion_id_mysql = dbMySQLManager.insertar_conversacion(
-                        cliente_id=cliente_id_mysql,
-                        mensaje="Inicio de conversación por lead",
-                        tipo_conversacion="activa",
-                        resultado=None,
-                        estado_conversacion="activa"
-                    )
-                else:
-                    print("Cliente encontrado:", cliente)
-                    cliente_id_mysql = dbMySQLManager.obtener_id_cliente_por_celular(format_number(lead["Mobile"]))
-
-                    # Verificar si ya existe una conversación activa en MySQL
-                    if not dbMySQLManager.obtener_conversacion_activa(cliente_id_mysql):
-                        dbMongoManager.crear_conversacion_activa(format_number(lead["Mobile"]))
-                        dbMySQLManager.insertar_conversacion(
-                            cliente_id=cliente_id_mysql,
-                            mensaje="Inicio de conversación por lead",
-                            tipo_conversacion="activa",
-                            resultado=None,
-                            estado_conversacion="activa"
-                        )
-
-
-                    # Registrar el lead en MySQL
-                lead_id_mysql = dbMySQLManager.insertar_lead_zoho(
-                    cliente_id=cliente_id_mysql,
-                    fecha_contacto=datetime.now(),
-                    prioridad_lead=lead.get("Prioridad_Lead", 1),
-                    lead_source=lead.get("Lead_Source", "Desconocido"),
-                    campaña=lead.get("Campaing_Name", ""),
-                    canal_lead=lead.get("Canal_Lead", "Desconocido"),
-                    estado_lead=lead.get("Lead_Status", "nuevo").lower(),
-                    notas="Lead generado automáticamente",
-                    tipo_lead= lead["Tipo_de_Lead"]
-                )        
-
-                # Crear una interacción en MongoDB
-                dbMongoManager.crear_nueva_interaccion_vacia(format_number(lead["Mobile"]))
-
-                # Enviar mensaje al lead usando Twilio
-                mobile = format_number(lead["Mobile"])
-                print("Enviando mensaje a:", mobile)
-                resultado_lead = openai.consultaLeadZoho(lead)
-                estado_lead = resultado_lead.split("-")[0].strip().replace('"','')
-                response_message = resultado_lead.split("-")[1].strip().replace('"','')
-                #twilio.send_message(mobile, response_message)
-                #zoho_manager.marcar_lead_como_analizado(lead["id"])  # Ejemplo de función para actualizar estado en Zoho
-
-                # Actualizar estado en MySQL y MongoDB
-                #dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, estado_lead.lower())
-                dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql,'contactado' )
-                dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(mobile, response_message)
-                dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
-                print("Estado del lead:", estado_lead)
-                print("Mensaje de respuesta:", response_message)
-
-            time.sleep(86400)  # Espera 24 horas antes de procesar de nuevo
-    finally:
-        os.remove("/tmp/iniciar_conversacion.lock")
-
-def verificar_estados_clientes():
-    while True:
-        print("Verificando estados de clientes...")
-        clientes = dbMySQLManager.obtener_todos_los_clientes()
-        fecha_actual = datetime.now()
-        for cliente in clientes:
-            if(cliente['nombre'] != "Daniel"):
-                continue
-            cliente_id = cliente['cliente_id']
-            estado = cliente['estado']
-            fecha_ultima_interaccion = cliente['fecha_ultima_interaccion']
-            fecha_ultima_interaccion_bot = cliente['fecha_ultima_interaccion_bot']
-            celular = cliente['celular']
-            
-            # Reglas basadas en el estado y las fechas de última interacción
-            if estado == 'interesado':
-                if fecha_ultima_interaccion is not None:
-                    dias_sin_interaccion = (fecha_actual - fecha_ultima_interaccion).days
-                    if dias_sin_interaccion >= 2 and dias_sin_interaccion <= 7:
-                        # Enviar mensaje de seguimiento
-                        conversation_actual = dbMongoManager.obtener_conversacion_actual(celular)
-                        conversation_history = dbMongoManager.obtener_historial_conversaciones(celular)
-                        response_message = openai.consulta(cliente, conversation_actual, conversation_history)
-                        twilio.send_message(celular, response_message)
-                        # Actualizar fechas de última interacción
-                        dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-                        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(celular, response_message)
-
-            elif estado == 'promesas de pago':
-                # Obtener la cita agendada para este cliente en estado 'agendada'
-                cita = dbMySQLManager.obtener_cita_agendada_por_cliente(cliente_id)
-                if cita:
-                    fecha_agendada = cita['fecha_agendada']  # Asegúrate de tener este campo
-                    horas_desde_agendada = (fecha_actual - fecha_agendada).total_seconds() / 3600
-
-                    if horas_desde_agendada >= 48:
-                        # Cancelar la cita
-                        dbMySQLManager.actualizar_estado_cita(cita['cita_id'], 'cancelada')
-                        # Actualizar el estado del cliente a 'seguimiento' o 'inactivo'
-                        nuevo_estado = 'seguimiento'
-                        if es_transicion_valida(estado, nuevo_estado):
-                            dbMySQLManager.actualizar_estado_cliente(cliente_id, nuevo_estado)
-                        else:
-                            print(f"No se actualiza el estado desde {estado} a {nuevo_estado}.")
-                        # Notificar al cliente sobre la cancelación
-                        response_message = "Estimado cliente, su cita ha sido cancelada debido a la falta de pago en el tiempo establecido. Si desea reprogramar, por favor contáctenos."
-                        twilio.send_message(celular, response_message)
-                        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(celular, response_message)
-                        dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id, fecha_actual)
-                        dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-
-                    elif horas_desde_agendada >= 24 and horas_desde_agendada < 48:
-                        # Enviar recordatorio de pago si no se ha enviado ya
-                        if fecha_ultima_interaccion_bot is not None:
-                            horas_desde_ultima_interaccion_bot = (fecha_actual - fecha_ultima_interaccion_bot).total_seconds() / 3600
-                            if horas_desde_ultima_interaccion_bot >= 24:
-                                # Enviar recordatorio de pago
-                                link_pago = "https://culqi.com"  # Genera el link de pago real si es necesario
-                                conversation_actual = dbMongoManager.obtener_conversacion_actual(celular)
-                                conversation_history = dbMongoManager.obtener_historial_conversaciones(celular)
-                                response_message = openai.consultaPago(cliente, link_pago, conversation_actual, conversation_history)
-                                twilio.send_message(celular, response_message)
-                                # Actualizar fechas de última interacción
-                                dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id, fecha_actual)
-                                dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-                                dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(celular, response_message)
-                else:
-                    # Si no hay cita agendada, puedes decidir cómo manejarlo
-                    pass
-
-            elif estado == 'seguimiento':
-                if fecha_ultima_interaccion is not None:
-                    dias_sin_interaccion = (fecha_actual - fecha_ultima_interaccion).days
-                    if dias_sin_interaccion >= 7 and dias_sin_interaccion <= 30:
-                        # Enviar mensaje de seguimiento
-                        conversation_actual = dbMongoManager.obtener_conversacion_actual(celular)
-                        conversation_history = dbMongoManager.obtener_historial_conversaciones(celular)
-                        response_message = openai.consulta(cliente, conversation_actual, conversation_history)
-                        twilio.send_message(celular, response_message)
-                        # Actualizar fechas de última interacción
-                        dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-                        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(celular, response_message)
-
-            # Regla para clientes inactivos
-            if fecha_ultima_interaccion is not None:
-                dias_sin_interaccion = (fecha_actual - fecha_ultima_interaccion).days
-                if dias_sin_interaccion >= 30 and estado not in ['cita agendada', 'promesas de pago']:
-                    # Cambiar estado a 'inactivo'
-                    nuevo_estado = 'inactivo'
-                    if es_transicion_valida(estado, nuevo_estado):
-                        dbMySQLManager.actualizar_estado_cliente(cliente_id, nuevo_estado)
-                        # Finalizar conversaciones activas
-                        dbMongoManager.finalizar_conversacion_activa(celular)
-                        dbMySQLManager.finalizar_conversacion_activa(cliente_id)
-
-        # Esperar un tiempo antes de la siguiente verificación (ejemplo: 1 hora)
-        time.sleep(3600)
 
 def es_transicion_valida(estado_actual, nuevo_estado):
     prioridad_estados = {
@@ -634,134 +339,144 @@ def obtener_cliente_id_por_charge(charge):
     cliente_id = charge.get('metadata', {}).get('cliente_id')
     return cliente_id
 
-def verificar_citas_pasadas():
-    while True:
-        print("Verificando citas pasadas...")
-        fecha_actual = datetime.now()
-        citas_pasadas = dbMySQLManager.obtener_citas_pasadas(fecha_actual)
-        for cita in citas_pasadas:
-            cita_id = cita['cita_id']
-            cliente_id = cita['cliente_id']
-            fecha_cita = cita['fecha_cita']
-            estado_cita = cita['estado_cita']
-
-            # Por ahora asumimos que la cita se completó
-            dbMySQLManager.actualizar_estado_cita(cita_id, 'completada')
-
-            # Actualizar el estado del cliente a 'finalizado'
-            nuevo_estado = 'finalizado'
-            estado_actual = dbMySQLManager.obtener_estado_cliente(cliente_id)
-            if es_transicion_valida(estado_actual, nuevo_estado):
-                dbMySQLManager.actualizar_estado_cliente(cliente_id, nuevo_estado)
-            else:
-                print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
-
-            # Enviar mensaje de agradecimiento al cliente
-            cliente = dbMySQLManager.obtener_cliente(cliente_id)
-            response_message = "Esperamos que tu cita haya sido satisfactoria. ¡Gracias por confiar en nosotros!"
-            twilio.send_message(cliente['celular'], response_message)
-            dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente['celular'], response_message)
-            dbMySQLManager.actualizar_fecha_ultima_interaccion(cliente_id, fecha_actual)
-            dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-
-        # Esperar antes de la siguiente verificación (ejemplo: cada hora)
-        time.sleep(3600)
-
-
-@app.route('/culqi-webhook', methods=['POST'])
-def culqi_webhook():
+@celery.task
+def procesar_culqi_webhook(data):
     try:
         # Procesar el contenido de la notificación
-        data = request.get_json()
         evento = data.get('type')
-        print("data : ", data)
-        
         if evento == 'charge.creation.succeeded':  # Verifica si es el evento correcto
-            # Parsear los datos del objeto `charge` dentro de `data`
-            charge_data = data.get('data', {})
-            charge = charge_data if isinstance(charge_data, dict) else json.loads(charge_data)  # Deserializar si es string
-            
-            # Obtener el número de teléfono desde antifraudDetails
+            charge = data.get('data', {})
+            first_name = charge.get('antifraudDetails', {}).get('firstName')
+            last_name = charge.get('antifraudDetails', {}).get('lastName')
             phone_number = charge.get('antifraudDetails', {}).get('phone')
             phone_number = format_number(phone_number) if phone_number else None
+
             if phone_number:
-                # Buscar al cliente en la base de datos por número de teléfono
                 cliente_id = dbMySQLManager.obtener_id_cliente_por_celular(phone_number)
                 if cliente_id:
-                    # Actualizar el estado del cliente a 'cita agendada'
-                    dbMySQLManager.actualizar_estado_cliente(cliente_id, 'cita agendada')
-                    
-                    # Registrar el pago y confirmar la cita
-                    monto = charge.get('amount', 0) / 100  # Culqi maneja el monto en céntimos, convertir a unidades monetarias
+                    monto = charge.get('amount', 0) / 100  # Convertir céntimos a unidades
                     metodo_pago = "link de pago"
-                    dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id, monto, metodo_pago)
-                    
-                    # marcar cita en calendar como  "Cita confirmada para {cliente_mysql['nombre']}"
+                    dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id, monto, metodo_pago,first_name,last_name)
+
+                    # Actualiza Google Calendar y envía confirmación al cliente
                     cita = dbMySQLManager.obtener_cita_mas_cercana(cliente_id)
-                    if not cita:
-                        print("No se encontró una cita para el cliente:", phone_number)
-                        # Enviar mensaje de confirmación al cliente
-                        response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
-                        twilio.send_message(phone_number, response_message)
+                    if cita:
+                        fecha_cita = datetime.fromisoformat(cita['fecha_cita'])
+                        fecha = fecha_cita.strftime("%Y-%m-%d")
+                        hora_inicio = fecha_cita.strftime("%H:%M")
+                        calendar.actualizar_evento_a_confirmado(fecha, hora_inicio)
 
-                        # Actualizar fechas de última interacción
-                        fecha_actual = datetime.now()
-                        dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
-                        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(phone_number, response_message)
-
-                    fecha_cita = cita['fecha_cita']  # Formato 'YYYY-MM-DD HH:MM:SS'
-
-                    # Formatear la fecha y hora para el método de confirmacion
-                    fecha = fecha_cita.strftime("%Y-%m-%d")
-                    hora_inicio = fecha_cita.strftime("%H:%M")
-
-                    print(f"Procesando cita agendada: {fecha} {hora_inicio} del cliente {cita["cliente_id"]}")
-
-                    # Llamar al método para editar el evento
-                    evento_editado = calendar.actualizar_evento_a_confirmado(fecha, hora_inicio)
-                    if evento_editado:
-                        print("Evento confirmado exitosamente.")
-                    else:
-                        print("No se encontró ningún evento en el rango especificado.")                    
-
-                    # Enviar mensaje de confirmación al cliente
+                    # Enviar mensaje de confirmación
                     response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
                     twilio.send_message(phone_number, response_message)
 
-                    # Actualizar fechas de última interacción
+                    # Actualizar interacción
                     fecha_actual = datetime.now()
                     dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
                     dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(phone_number, response_message)
                 else:
-                    print("No se encontró un cliente con el número de teléfono:", phone_number)
+                    print("Cliente no encontrado para el número:", phone_number)
             else:
-                print("No se encontró el número de teléfono en antifraudDetails")
-
+                print("Número de teléfono no encontrado en antifraudDetails.")
         else:
             print(f"Evento no manejado: {evento}")
+    except Exception as e:
+        print("Error procesando webhook de Culqi:", e)
+
+@app.route('/culqi-webhook', methods=['POST'])
+def culqi_webhook():
+    try:
+        data = request.get_json()
+        print("Notificación recibida:", data)
+
+        # Llama a la tarea Celery para procesar la notificación
+        procesar_culqi_webhook.apply_async(args=[data])
 
         return '', 200
-
     except Exception as e:
         print("Error en culqi_webhook:", e)
         return 'Error interno del servidor', 500
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return '', 200
+
+#@app.route('/culqi-webhook', methods=['POST'])
+#def culqi_webhook():
+#    try:
+#        # Procesar el contenido de la notificación
+#        data = request.get_json()
+#        evento = data.get('type')
+#        print("data : ", data)
+#        
+#        if evento == 'charge.creation.succeeded':  # Verifica si es el evento correcto
+#            # Parsear los datos del objeto `charge` dentro de `data`
+#            charge_data = data.get('data', {})
+#            charge = charge_data if isinstance(charge_data, dict) else json.loads(charge_data)  # Deserializar si es string
+#            
+#            # Obtener el número de teléfono desde antifraudDetails
+#            phone_number = charge.get('antifraudDetails', {}).get('phone')
+#            phone_number = format_number(phone_number) if phone_number else None
+#            if phone_number:
+#                # Buscar al cliente en la base de datos por número de teléfono
+#                cliente_id = dbMySQLManager.obtener_id_cliente_por_celular(phone_number)
+#                if cliente_id:
+#                    # Actualizar el estado del cliente a 'cita agendada'
+#                    dbMySQLManager.actualizar_estado_cliente(cliente_id, 'cita agendada')
+#                    
+#                    # Registrar el pago y confirmar la cita
+#                    monto = charge.get('amount', 0) / 100  # Culqi maneja el monto en céntimos, convertir a unidades monetarias
+#                    metodo_pago = "link de pago"
+#                    dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id, monto, metodo_pago)
+#                    
+#                    # marcar cita en calendar como  "Cita confirmada para {cliente_mysql['nombre']}"
+#                    cita = dbMySQLManager.obtener_cita_mas_cercana(cliente_id)
+#                    if not cita:
+#                        print("No se encontró una cita para el cliente:", phone_number)
+#                       # Enviar mensaje de confirmación al cliente
+#                        response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
+#                        twilio.send_message(phone_number, response_message)
+
+#                        # Actualizar fechas de última interacción
+#                        fecha_actual = datetime.now()
+#                        dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
+#                        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(phone_number, response_message)
+#
+#                    fecha_cita = cita['fecha_cita']  # Formato 'YYYY-MM-DD HH:MM:SS'
+#
+#                    # Formatear la fecha y hora para el método de confirmacion
+#                    fecha = fecha_cita.strftime("%Y-%m-%d")
+#                    hora_inicio = fecha_cita.strftime("%H:%M")
+#
+#                    print(f"Procesando cita agendada: {fecha} {hora_inicio} del cliente {cita["cliente_id"]}")
+#
+#                    # Llamar al método para editar el evento
+#                    evento_editado = calendar.actualizar_evento_a_confirmado(fecha, hora_inicio)
+#                    if evento_editado:
+#                        print("Evento confirmado exitosamente.")
+#                    else:
+#                        print("No se encontró ningún evento en el rango especificado.")                    
+#
+#                    # Enviar mensaje de confirmación al cliente
+#                    response_message = "¡Gracias por tu pago! Tu cita ha sido confirmada. Te esperamos."
+#                    twilio.send_message(phone_number, response_message)
+#
+#                    # Actualizar fechas de última interacción
+#                    fecha_actual = datetime.now()
+#                    dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id, fecha_actual)
+#                    dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(phone_number, response_message)
+#                else:
+#                    print("No se encontró un cliente con el número de teléfono:", phone_number)
+#            else:
+#                print("No se encontró el número de teléfono en antifraudDetails")
+#
+#        else:
+#            print(f"Evento no manejado: {evento}")
+#
+#        return '', 200
+#
+#    except Exception as e:
+#        print("Error en culqi_webhook:", e)
+#        return 'Error interno del servidor', 500
 
 
-#def start_background_threads():
-    # Iniciar el hilo en segundo plano para iniciar conversaciones automáticamente
-    # threading.Thread(target=iniciar_conversacion_leads).start()
-    # Iniciar el hilo en segundo plano para verificar conversaciones inactivas
-    #threading.Thread(target=iniciar_conversacion_leads_zoho).start()
-    # Iniciar el hilo en segundo plano para limpiar citas no confirmadas
-    # threading.Thread(target=limpiar_citas_no_confirmadas).start()
-    # Iniciar otro hilo, si es necesario
-    # threading.Thread(target=verificar_estados_clientes).start()
-
-#start_background_threads()
 
 if __name__ == '__main__':
     # Iniciar la aplicación Flask

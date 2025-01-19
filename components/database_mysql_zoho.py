@@ -188,7 +188,7 @@ class DataBaseMySQLManager:
                 '`Ult_Compra_Medicamento_en_Meses`', '`Unsubscribed_Time`', '`Ult_Fec_Gest1`', '`Monto_Cirug_a`',
                 '`Ult_Fec_Gest`', '`Mobile`', '`$orchestration`', '`First_Visited_Time`', '`Rpta_Recordatorio`',
                 '`Last_Name`', '`$in_merge`', '`Referrer`', '`U_F_s_Diagnosticadas`', '`Lead_Source`',
-                '`Fecha_creaci_n_lead`', '`Tag`', '`$approval_state`', '`DNI`'
+                '`Fecha_creaci_n_lead`', '`Tag`', '`$approval_state`', '`DNI`','`Ad_ID`'
             ]
             
             insert_query = f"""
@@ -277,7 +277,8 @@ class DataBaseMySQLManager:
                 contact.get('Fecha_creaci_n_lead'),
                 json.dumps(contact.get('Tag')) if contact.get('Tag') else None,
                 contact.get('$approval_state'),
-                contact.get('DNI')
+                contact.get('DNI'),
+                contact.get('Ad_ID')
             )
 
             # Verificar que el número de columnas y datos coincida
