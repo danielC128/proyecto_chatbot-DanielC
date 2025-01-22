@@ -65,11 +65,15 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
         dbMySQLManager.actualizar_nombre_cliente(cliente_id_mysql, profileName)
     estado_actual = cliente_mysql['estado']
     cliente_nuevo = estado_actual=="nuevo"
+    cliente_nuevo_seguimiento = estado_actual == "nuevo"
     campania = ""
     if cliente_nuevo:
         # asociarlo a la nueva campaña
         cliente_mysql["bound"] = True
+        cliente_mysql["estado"] = 'seguimiento'
         dbMySQLManager.marcar_bound(cliente_id_mysql,True)
+        dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, 'seguimiento')
+        dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, 'seguimiento')
         campania_registro = dbMySQLManager.asociar_cliente_a_campana_mas_reciente(cliente_id_mysql) # lo asocia a la campania mas reciente que este activa
         campania = campania_registro["descripcion"] if campania_registro != None else ""  
 
@@ -116,10 +120,10 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                 intencion_list = json_a_lista(intencion)
                 print("Intencion lista: ", intencion_list)
                 if intencion_list[0] == 1:
-                    print("Ingreso a la intencion 1")
-                    nuevo_estado = 'seguimiento'
-                    if es_transicion_valida(estado_actual, nuevo_estado):
-                        cliente_mysql["estado"] = 'seguimiento'
+                    print("Ingreso a la intencion 1")                  
+                    nuevo_estado = 'interesado'
+                    if es_transicion_valida(estado_actual, nuevo_estado) and not cliente_nuevo_seguimiento:                           
+                        cliente_mysql["estado"] = 'interesado'
                         dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
                         dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
                     else:
@@ -129,7 +133,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     if len(intencion_list) > 1:
                         print("Ingreso a la intencion 2")
                         nuevo_estado = 'interesado'
-                        if es_transicion_valida(estado_actual, nuevo_estado):
+                        if es_transicion_valida(estado_actual, nuevo_estado) and not cliente_nuevo_seguimiento:
                             cliente_mysql["estado"] = 'interesado'
                             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)  
                             dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)      
@@ -155,10 +159,16 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     if not reserva_cita:
                         response_message = f"""{{"mensaje": "Hubo un error al reservar la cita. Por favor, intenta nuevamente."}}"""
                     elif reserva_cita == "Horario no disponible":
-                        response_message = f"""{{"mensaje": "Lo siento, el horario seleccionado no está disponible. Por favor, selecciona otro horario."}}"""
+                        # Comprobar si esa cita es de el mismo cliente que hace la consulta
+                        cita_cliente = dbMySQLManager.buscar_cita_por_fecha_cliente(cliente_id_mysql, intencion_list[1].lstrip())
+                        if cita_cliente:
+                            print("Cita encontrada:", cita_cliente)
+                            response_message = openai.consultaCitaDelCliente(cliente_mysql,cita_cliente,conversation_actual, conversation_history,cliente_nuevo,campania)
+                        else:
+                            response_message = f"""{{"mensaje": "Lo siento, el horario seleccionado no está disponible. Por favor, selecciona otro horario."}}"""
                     else:
                         nuevo_estado = 'promesas de pago'   
-                        if es_transicion_valida(estado_actual, nuevo_estado):
+                        if es_transicion_valida(estado_actual, nuevo_estado) :
                             cliente_mysql["estado"] = 'promesas de pago'
                             dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
                             dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
