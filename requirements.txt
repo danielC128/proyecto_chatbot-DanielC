@@ -11,3 +11,4 @@ culqi
 pandas
 mysql.connector
 fcntl
+redis

@@ -5,6 +5,7 @@ import os
 import hmac
 import re
 import hashlib
+import redis
 from datetime import datetime, timedelta
 from celery_app import celery
 from flask import Flask, request, jsonify
@@ -17,6 +18,9 @@ from components.leader_csv_component import LeadManager
 from components.zoho_component import ZohoCRMManager
 from helpers.helpers import format_number, extraer_json,json_a_lista
 from api_keys.api_keys import client_id_zoho, client_secret_zoho, refresh_token_zoho
+from celery_app import celery
+
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 app = Flask(__name__)
 
@@ -29,6 +33,28 @@ dbMySQLManager = DataBaseMySQLManager()
 leaderManager = LeadManager("leads/Leads_Prueba.csv")
 zoho_manager = ZohoCRMManager(client_id_zoho, client_secret_zoho, 'http://localhost', refresh_token_zoho)
 #culqi = CulqiManager()
+
+def get_scheduled_task_id(celular):
+    """Devuelve el ID de la tarea pendiente para este celular, o None."""
+    return r.get(f"celery_task:{celular}")
+
+def set_scheduled_task_id(celular, task_id):
+    """Guarda en Redis el ID de la tarea Celery pendiente para este celular."""
+    # ex=300 => expira en 5 minutos si por alguna razón no se limpia
+    r.set(f"celery_task:{celular}", task_id, ex=300)
+
+def clear_scheduled_task_id(celular):
+    """Elimina la referencia en Redis de la tarea pendiente para este celular."""
+    r.delete(f"celery_task:{celular}")
+
+def revoke_task(task_id):
+    """Revoca la tarea dado el task_id."""
+    try:
+        celery.control.revoke(task_id, terminate=True)
+        print(f"Tarea {task_id} revocada exitosamente.")
+    except Exception as e:
+        print(f"Error revocando tarea: {e}")
+
 
 # Función para enviar la respuesta al cliente después del retardo
 @celery.task
@@ -104,7 +130,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
     # Hacemos un mapeo de intenciones para determinar si el chatbot necesita algo específico
     # como agendar, pagar, horarios disponibles
     # regresariamos aqui en caso haya un error <- go to
-    max_intentos = 3
+    max_intentos = 5
     intento_actual = 0
 
     while intento_actual < max_intentos:
@@ -245,13 +271,17 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                 print("Response message:", response_message)
                 dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
                 dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
-
+                clear_scheduled_task_id(celular)
+                print(f"Terminó la tarea para {celular}, limpiando task_id en Redis.")
                 break
             else:
                 response_message = "Lo siento, no pude entender tu mensaje. Por favor, intenta de nuevo."
                 twilio.send_message(cliente["celular"], response_message)
                 dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
                 dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
+                
+                clear_scheduled_task_id(celular)
+                print(f"Terminó la tarea para {celular}, limpiando task_id en Redis.")
                 break
 
         except Exception as e:
@@ -263,6 +293,9 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                 twilio.send_message(cliente["celular"], response_message)
                 dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
                 dbMySQLManager.actualizar_fecha_ultima_interaccion_bot(cliente_id_mysql, datetime.now())
+                
+                clear_scheduled_task_id(celular)
+                print(f"Terminó la tarea para {celular}, limpiando task_id en Redis.")
                 break
             else:
                 print("Reintentando desde la clasificación de intención...")
@@ -299,11 +332,24 @@ def whatsapp_bot():
         # Agrega la interacción del cliente a la conversación actual
         #dbMongoManager.guardar_mensaje_cliente_ultima_interaccion(celular, incoming_msg)
         dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)
-        print("Interacción del cliente guardada en la conversación actual.")         
+        print("Interacción del cliente guardada en la conversación actual.")  
+
+        # Revisar si ya hay una tarea pendiente para este celular
+        old_task_id = get_scheduled_task_id(celular)
+        if old_task_id:
+            # Revocar la tarea anterior para reiniciar el countdown
+            revoke_task(old_task_id.decode('utf-8'))       
 
         # Llama a la tarea de Celery con un retraso de 2 segundos
-        enviar_respuesta.apply_async(args=[celular, cliente_nuevo,profileName], countdown=2)
-        print("Tarea de Celery programada para el cliente:", celular)
+        new_task = enviar_respuesta.apply_async(
+            args=[celular, cliente_nuevo, profileName],
+            countdown=45
+        )
+
+        # 4) Guardar el task_id en Redis
+        set_scheduled_task_id(celular, new_task.id)
+
+        print(f"Tarea programada {new_task.id} para {celular}")
 
         return 'OK', 200
 

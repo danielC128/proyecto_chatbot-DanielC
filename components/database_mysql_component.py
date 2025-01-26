@@ -513,3 +513,90 @@ class DataBaseMySQLManager:
 
         finally:
             cursor.close()
+
+    def buscar_cita_por_fecha_cliente(self, cliente_id, fecha_cita):
+        """
+        Busca una cita agendada para un cliente en una fecha específica.
+        """
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM citas WHERE cliente_id = %s AND fecha_cita = %s"
+        cursor.execute(query, (cliente_id, fecha_cita))
+        return cursor.fetchone()
+    
+    def obtener_clientes_filtrados(self, fecha_inicio=None, fecha_fin=None, estado=None, limite=None, bound=None):
+        """
+        Obtiene clientes filtrados por fecha de creación, estado (simple o múltiple), bound y/o límite de registros.
+
+        Args:
+            fecha_inicio (str): Fecha inicial en formato 'YYYY-MM-DD'.
+            fecha_fin (str): Fecha final en formato 'YYYY-MM-DD'.
+            estado (str o list): 
+                - Puede ser un string representando un único estado, 
+                - O una lista de strings con múltiples estados, 
+                - O None (no filtra por estado).
+            limite (int): Límite de registros a devolver.
+            bound (bool): Filtrar por si el cliente es bound (True o False).
+
+        Returns:
+            list: Lista de clientes que cumplen con los filtros.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor(dictionary=True)
+
+        # Construcción dinámica de la consulta
+        query = "SELECT * FROM clientes WHERE 1=1"
+        params = []
+
+        # Filtro por fecha de creación (si se proporciona)
+        if fecha_inicio:
+            query += " AND fecha_creacion >= %s"
+            params.append(fecha_inicio)
+        if fecha_fin:
+            query += " AND fecha_creacion <= %s"
+            params.append(fecha_fin)
+
+        # Filtro por estado (si se proporciona)
+        if estado is not None:
+            if isinstance(estado, list):
+                # Estado es una lista de valores
+                placeholders = ", ".join(["%s"] * len(estado))
+                query += f" AND estado IN ({placeholders})"
+                params.extend(estado)
+            else:
+                # Estado es un único valor (string)
+                query += " AND estado = %s"
+                params.append(estado)
+
+        # Filtro por bound (si se proporciona)
+        if bound is not None:
+            query += " AND bound = %s"
+            params.append(bound)
+
+        # Límite de registros (si se proporciona)
+        if limite:
+            query += " LIMIT %s"
+            params.append(limite)
+
+        # Ejecución de la consulta
+        cursor.execute(query, tuple(params))
+        resultados = cursor.fetchall()
+        cursor.close()
+
+        return resultados
+    
+
+    def actualizar_in_out_cliente(self, cliente_id, in_out_valor):
+        """
+        Actualiza el campo in_out para un cliente específico.
+
+        Args:
+            cliente_id (int): ID del cliente a actualizar.
+            in_out_valor (bool): Valor booleano que se asignará al campo in_out.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+        query = "UPDATE clientes SET in_out = %s WHERE cliente_id = %s"
+        cursor.execute(query, (in_out_valor, cliente_id))
+        self.connection.commit()
+        cursor.close()
+        print(f"Cliente {cliente_id} se ha actualizado el campo in_out a {in_out_valor}.")
