@@ -305,6 +305,7 @@ Y cualquiera de los tratamientos son de mas de una sesión, el número de sesion
 - **Confirmación de la cita**: Solo confirma la reservación de la cita cuando yo te diga que se reservó la cita exitosamente, no lo hagas antes. Y siempre para poder agendar una cita debes tener el nombre del cliente, el dia y hora.
 - **Pagina web de IFC**: https://trasplantecapilar.pe/
 - **Facebook de IFC**: https://www.facebook.com/trasplantecapilarenperu/
+- **Estacionamientos**: El edificio donde esta los consultorios cuenta con estacionamiento, son los 15 y 16.
 - **Instagram de IFC**: https://www.instagram.com/trasplantecapilarperu/
 - **Doctores que atienden las consultas en el IFC**: Dr. Miguel Montalban y Dra. Rosa Campos.
 
