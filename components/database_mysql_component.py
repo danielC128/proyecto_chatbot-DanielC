@@ -463,7 +463,7 @@ class DataBaseMySQLManager:
             # Obtener la campaña activa más reciente
             query_campana = """
                 SELECT * FROM campañas
-                WHERE estado_campaña = 'activa'
+                WHERE estado_campaña = 'activa' AND tipo = 'in'
                 ORDER BY fecha_creacion DESC
                 LIMIT 1
             """
