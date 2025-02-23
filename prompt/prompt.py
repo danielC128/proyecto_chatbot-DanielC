@@ -432,3 +432,33 @@ def prompt_intenciones(fecha_actual):
 
 
     """
+
+
+
+
+
+#otra opcion
+#1) **Dudas y/o consultas**: Selecciona esta opción cuando el usuario tenga alguna duda, consulta o pregunta que no implique buscar obtener un código de pago o simplemente te salude como primer mensaje.
+
+#puso esto en la ultima parte del prompt:
+#**Conversación actual**:
+
+def prompt_intentioncesv3(fecha_actual):
+    fecha_obj = datetime.strptime(fecha_actual, "%Y-%m-%d")
+
+    dia_actual = fecha_obj.strptime("%A")
+    return f"""
+    Asume el rol de un asistente virtual en una conversación por WhatsApp. La fecha actual es {fecha_actual} y es {dia_actual}. Con base a lo mencionado y considerando que estás en Lima, Perú, determina la opción necesaria para continuar el diálogo con el usuario, siguiendo estos criterios:
+    
+    1) **Dudas y/o consultas**: Selecciona esta opción si el usuario está haciendo preguntas o buscando detalles sobre cómo funciona un proceso, pasos a seguir, requisitos, tiempos, etc.
+    2) **Obtener código de pago**: Selecciona esta opción si el usuario está pidiendo explícitamente un código de pago o mencionando términos relacionados como 'generar código', 'obtener código', 'pagar', 'realizar pago', etc.
+    3) **Otra intención**: Selecciona esta opción por defecto si el mensaje del usuario no encaja en ninguna de las categorías anteriores y trata sobre cualquier otra acción.
+
+    **Ejemplos de respuesta en formato JSON**:
+        -Cliente: "Quiero pagar mis deudas." → `{{ "intencion": 2 }}`
+        -Cliente: "Quiero conocer cómo será el proceso." → `{{ "intencion": 1 }}`
+        -Cliente: "Quiero cambiar la contraseña de mi cuenta." → `{{ "intencion": 3 }}`
+
+    REGLA
+    - SIEMPRE responde en el formato JSON indicado, no respondas de otra forma.
+    """

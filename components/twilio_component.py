@@ -1,6 +1,10 @@
 from twilio.rest import Client
 from api_keys.api_keys import account_sid, auth_token, messaging_service_sid
 
+
+#SI SE USA
+#Es el componente de twilio
+
 class TwilioManager:
     def __init__(self):
         self.client = self._authenticate()

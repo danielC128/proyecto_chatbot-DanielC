@@ -2,10 +2,25 @@ from pymongo import MongoClient
 from datetime import datetime
 import pytz
 
+
+#SÍ SE USA
+#Es el componente para poder usar mongodb en nuestro programa
+
+
 class DataBaseMongoDBManager:
     def __init__(self):
         self.db = self._connect()
         self.lima_tz = pytz.timezone("America/Lima")  # Definir la zona horaria de Lima
+
+
+    """
+    def _connect(self):
+        #uri = 'mongodb://localhost:27017/'
+        uri = "mongodb+srv://admin:<Camembert65>@cluster0.1rtzz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+        client = MongoClient(uri)
+        return client["maqui_sistemas"]
+    """
+
 
     def _connect(self):
         #uri = 'mongodb://localhost:27017/'

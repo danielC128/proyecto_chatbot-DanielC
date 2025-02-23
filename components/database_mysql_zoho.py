@@ -4,6 +4,9 @@ from datetime import datetime
 import pytz
 import json
 
+#NO SE USA
+#Nada de lo que sea zoho se usará para el programa
+
 class DataBaseMySQLManager:
     def __init__(self):
         self.connection = self._connect()

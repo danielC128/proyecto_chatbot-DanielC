@@ -1,6 +1,10 @@
 import requests
 import datetime as dt
 
+#NO SE USA
+#Es de la parte de culqi y pues, eso no va
+
+
 class CulqiPaymentManager:
     def __init__(self, public_key, private_key):
         self.public_key = public_key
