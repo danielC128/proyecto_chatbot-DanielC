@@ -2,6 +2,10 @@ import requests
 import json
 from datetime import datetime, timedelta
 
+#NO SE USA
+#Nada de zoho se usará aquí
+
+
 class ZohoCRMManager:
     def __init__(self, client_id, client_secret, redirect_uri, refresh_token):
         self.api_base_url = "https://www.zohoapis.com/crm/v2"

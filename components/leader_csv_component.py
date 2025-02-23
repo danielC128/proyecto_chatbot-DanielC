@@ -1,5 +1,9 @@
 import csv
 
+#NO SE USA (creo)
+#Es para los leads que imagino se obtienen de un archivo csv
+#Podriamos usarlo como guia en caso nos pasen csv para leer datos
+
 class LeadManager:
     def __init__(self, file_path):
         self.file_path = file_path

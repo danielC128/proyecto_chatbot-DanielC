@@ -2,6 +2,10 @@ import re
 import datetime
 import json
 
+
+#SI SE USA
+#Es para formatear conversaciones por lo que tengo entendido
+
 def plantilla_seguimiento_interesados_24_01_25():
     return """
  ✨ PRP GRATIS ✨

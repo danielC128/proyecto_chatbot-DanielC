@@ -7,6 +7,9 @@ from googleapiclient.errors import HttpError
 import pytz
 import os.path
 
+#NO SE USA
+#ya que no se usará google calendar para este caso
+
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 class GoogleCalendarManager:
