@@ -44,7 +44,7 @@ def set_scheduled_task_id(celular, task_id):
     r.set(f"celery_task:{celular}", task_id, ex=300)
 
 def clear_scheduled_task_id(celular):
-    """Elimina la referencia en Redis de la tarea pendiente para este celular."""
+    """Elimina la referencia en Redis de la tarea pendiente para este celular. Solo se usa en la función enviar_respuesta"""
     r.delete(f"celery_task:{celular}")
 
 def revoke_task(task_id):
@@ -301,7 +301,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                 print("Reintentando desde la clasificación de intención...")
                 # Continúa el bucle (vuelve al inicio) para intentar de nuevo
 
-@app.route('/bot', methods=['POST'])
+@app.route('/bot', methods=['POST'])   #RUTA 1
 def whatsapp_bot():
     try:
         print("RESPUESTA DE TWILIO: ", request)
@@ -314,8 +314,8 @@ def whatsapp_bot():
         celular = sender.split('whatsapp:')[1]
         print("Mensaje recibido:", incoming_msg)
         print("Remitente:", celular)
-        
-        # Obtener cliente de la base de datos
+        #MONGODB
+        # Obtener cliente de la base de datos mongo en la que se guardan las conversaciones, sino, crea un cliente
         cliente = dbMongoManager.obtener_cliente_por_celular(celular)
         cliente_nuevo = False
         if not cliente:
@@ -333,7 +333,7 @@ def whatsapp_bot():
         #dbMongoManager.guardar_mensaje_cliente_ultima_interaccion(celular, incoming_msg)
         dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)
         print("Interacción del cliente guardada en la conversación actual.")  
-
+        #FIN MONGODB
         # Revisar si ya hay una tarea pendiente para este celular
         old_task_id = get_scheduled_task_id(celular)
         if old_task_id:
@@ -356,6 +356,89 @@ def whatsapp_bot():
     except Exception as e:
         print("Error en whatsapp_bot:", e)
         return "Error interno del servidor", 500
+
+
+
+#Función para enviar revisar la intención y enviar la respuesta al cliente después del retardo (para código pago)
+@celery.task
+def enviar_respuesta_v2(celular, profileName):
+    #Verificar el numero de celular a evaluar
+    print("Enviando respuesta a: ", celular)
+
+
+
+
+@app.route('/bot_pago', methods=['POST'])  #RUTA 3 (código bot pago)
+def whatsapp_bot_codigopago():
+    try:
+        #VER el contenido del mensaje, enviado por el cliente, 
+        #a procesar
+        print("RESPUESTA DE TWILIO: ", request)
+        print("RESPUESTA DE TWILIO FORM: ", request.form)
+        print("RESPUESTA DE TWILIO BODY: ", request.form.get('Body'))
+        print("Profile Name: ", request.form.get('ProfileName'))
+
+        #asignar el contenido a las variables
+        profileName = request.form.get('ProfileName') #esta linea se puede eliminar
+        incoming_msg = request.form.get('Body').lower()
+        sender = request.form.get('From')
+        celular = sender.split('whatsapp:')[1]
+
+        #revisar el contenido asignado
+        print("Mensaje recibido: ", incoming_msg)
+        print("Remitente: ", celular)
+
+        #Parte de mongodb , donde se analiza si el cliente ya existe
+        #o si no existe y se crea ahí en la bd de mongo
+        #tambien ve el tema de si hay una conversacion activa o no
+        #tambien agrega la interaccion del cliente a la conversacion actual (?)
+
+        #de la linea 318 a la linea 335 de la ruta 1
+
+        #fin mongodb
+
+
+
+        #Revisa si hay una tarea pendiente para este celular y de ser
+        #necesario, eliminarla para tratar la nueva tarea
+        old_task_id = get_scheduled_task_id(celular)
+        if old_task_id:
+            #revocar la tarea anterior para reiniciar el countdown
+            revoke_task(old_task_id.decode('utf-8'))
+
+        #MUY IMPORTANTE ESTO siguiente
+        #Llama a la tarea de Celery con un retraso de 45 segundos
+        #Es decir, esperará 45 segundos por posibles mensajes extras
+        #del usuario y en base a eso determinar la intencion.
+        #Determinar la intencion sera esa tarea de Celery.
+        #La lógica antes de usar la función enviar respuesta v2 es
+        #el mensaje que escribió se une al historial de ese número y se
+        #junta con los otros mensajes, si llega a pasar 45 segundos sin
+        #recibir nuevos mensajes, ahí recién se usa la función
+        #enviar_respuesta_v2 , por lo que es importante tener esas
+        #funciones de mongodb
+
+        new_task = enviar_respuesta_v2.apply_async(
+            args=[celular, profileName],
+            countdown=45
+        )
+
+
+        #Una vez obtenido el new_task, lo guarda en la caché (Redis)
+        set_scheduled_task_id(celular, new_task.id)
+
+        #Verifica que se asignó correctamente
+        print(f"Tarea programada {new_task.id} para {celular}")
+
+        return 'OK', 200
+    
+    except Exception as e:
+        print("Error en whatsapp_bot_codigopago: ", e)
+        return "Error interno del servidor", 500
+    
+
+
+
 
 
 def es_transicion_valida(estado_actual, nuevo_estado):
@@ -439,7 +522,7 @@ def procesar_culqi_webhook(data):
     except Exception as e:
         print("Error procesando webhook de Culqi:", e)
 
-@app.route('/culqi-webhook', methods=['POST'])
+@app.route('/culqi-webhook', methods=['POST'])     #RUTA 2
 def culqi_webhook():
     try:
         data = request.get_json()
