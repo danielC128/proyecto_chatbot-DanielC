@@ -624,3 +624,5 @@ class DataBaseMySQLManager:
         query = "SELECT * FROM codigo_pago WHERE cliente_id = %s AND activo = TRUE"
         cursor.execute(query, (cliente_id))
         return cursor.fetchall()
+    
+    
