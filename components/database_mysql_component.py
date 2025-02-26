@@ -54,7 +54,7 @@ class DataBaseMySQLManager:
         """Inserta un nuevo cliente en la tabla de clientes si no existe ya."""
         if not self.existe_cliente_por_celular(celular):
             cursor = self.connection.cursor()
-            query = """INSERT INTO clientes (documento_identidad, tipo_documento, nombre, apellido, celular, email,estado)
+            query = """INSERT INTO cliente (documento_identidad, tipo_documento, nombre, apellido, celular, email,estado)
                        VALUES (%s, %s, %s, %s, %s, %s,%s)"""
             cursor.execute(query, (documento_identidad, tipo_documento, nombre, apellido, celular, email,estado))
             self.connection.commit()
@@ -606,23 +606,26 @@ class DataBaseMySQLManager:
 
 
 
-    def insertar_codigoPago(self, cliente_id, codigo, tipo_codigo, caso_relacionado, fecha_asignacion, fecha_vencimiento):
+    #tiene que haber un cliente ya existente con ese cliente_id en la tabla cliente, por lo que verificalo con un
+    #insertar_cliente antes de usar esta funcion
+    def insertar_codigoPago(self, cliente_id, codigo, tipo_codigo, caso_relacionado, fecha_asignacion):
         self._reconnect_if_needed()
         """Inserta un nuevo codigo de pago para un cliente en la tabla codigo_pago"""
         cursor = self.connection.cursor()
-        query = """INSERT INTO codigo_pago (cliente_id, codigo, tipo_codigo, caso_relacionado, fecha_asignacion, fecha_vencimiento)
-                   VALUES (%s, %s, %s, %s, %s, %s)"""
-        cursor.execute(query, (cliente_id, codigo, tipo_codigo, caso_relacionado, fecha_asignacion, fecha_vencimiento))
+        query = """INSERT INTO codigo_pago (cliente_id, codigo, tipo_codigo, caso_relacionado, fecha_asignacion)
+                   VALUES (%s, %s, %s, %s, %s)"""
+        cursor.execute(query, (cliente_id, codigo, tipo_codigo, caso_relacionado, fecha_asignacion))
         self.connection.commit()
         return cursor.lastrowid
-
-
-    def obtener_codigos_activos_cliente(self, cliente_id):
-        self._reconnect_if_needed()
-        """Obtiene todos los codigos activos de un cliente."""
-        cursor = self.connection.cursor(dictionary=True)
-        query = "SELECT * FROM codigo_pago WHERE cliente_id = %s AND activo = TRUE"
-        cursor.execute(query, (cliente_id))
-        return cursor.fetchall()
     
+
+    #esta funcion es para probar que el insertar funciono nada mas
+    def obtener_datos_codigoPago(self, codigo):
+        self._reconnect_if_needed()
+        """Obtiene los datos de un cliente por su ID"""
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM codigo_pago WHERE codigo = %s"
+        cursor.execute(query, (codigo,))
+        return cursor.fetchone()
+
     
