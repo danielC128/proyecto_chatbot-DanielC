@@ -56,7 +56,7 @@ def revoke_task(task_id):
         print(f"Error revocando tarea: {e}")
 
 
-# Función para enviar la respuesta al cliente después del retardo
+# Función para enviar la respuesta al cliente después del retardo, esto es con respecto a toda la conversacion, no solo del último mensaje enviado por el usuario
 @celery.task
 def enviar_respuesta(celular, cliente_nuevo, profileName):
     print("Enviando respuesta a:", celular)

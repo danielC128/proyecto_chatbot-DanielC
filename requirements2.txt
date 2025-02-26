@@ -1,0 +1,13 @@
+Flask
+gunicorn
+openai
+pymongo
+twilio
+google-api-python-client
+google-auth
+google-auth-oauthlib
+pytz
+culqi
+pandas
+mysql.connector
+redis

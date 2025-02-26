@@ -437,13 +437,15 @@ def prompt_intenciones(fecha_actual):
 
 
 
+
+#PROMPTS PARA EL BOT CODIGO DE PAGO
+
+
 #otra opcion
 #1) **Dudas y/o consultas**: Selecciona esta opción cuando el usuario tenga alguna duda, consulta o pregunta que no implique buscar obtener un código de pago o simplemente te salude como primer mensaje.
 
-#puso esto en la ultima parte del prompt:
-#**Conversación actual**:
-
-def prompt_intentioncesv3(fecha_actual):
+#esta funcion le muestra a chatgpt cómo clasificar la intencion del mensaje del cliente
+def prompt_intencionces_codPago(fecha_actual):
     fecha_obj = datetime.strptime(fecha_actual, "%Y-%m-%d")
 
     dia_actual = fecha_obj.strptime("%A")
@@ -461,4 +463,37 @@ def prompt_intentioncesv3(fecha_actual):
 
     REGLA
     - SIEMPRE responde en el formato JSON indicado, no respondas de otra forma.
+
+    
+    **Conversación actual**:
+
     """
+
+
+#esta funcion le dice a chatgpt cómo pedirle el dni (o ruc) al usuario
+#llamar a la función de 2 maneras,  solo con cliente y conversacion_actual  y con cliente, response_message y conversacion_actual
+#en caso haya un mensaje preparándose, en ese caso esta función agregaría lo de pedir el dni o ruc a ese mensaje que ya se 
+#estaba preparando
+def prompt_cliente_dni_ruc(cliente, response_message=None, conversacion_actual=None):
+    return f"""
+    A continuación tienes un mensaje para enviar a un cliente. Si ya tienes un mensaje original de respuesta (`response_message`), modifícalo para incluir de manera sutil, amable y natural una solicitud para que el cliente nos proporcione su número de DNI o RUC, sin afectar el mensaje principal.
+
+    Si `response_message` no está presente, genera un mensaje nuevo que responda naturalmente al último mensaje del cliente, incluyendo la solicitud de DNI/RUC.
+
+    Mensaje original: "{response_message if response_message else '[No hay mensaje original]'}"
+
+    Contexto: Actualmente, la información del cliente incluye el número {cliente["celular"]}, pero no tenemos su DNI ni RUC registrado. Redacta el mensaje de modo que se pida este dato de manera cómoda y amigable, sin que parezca una pregunta formal o directa.
+
+    Resultado esperado:
+    - Si `response_message` está presente: Integra la solicitud de DNI/RUC sin alterar el significado del mensaje principal.
+    - Si `response_message` no está presente: Genera una respuesta natural al último mensaje del cliente, incluyendo la solicitud de DNI/RUC de forma amigable.
+
+    Puntos a considerar:
+    - Ten en cuenta la conversación actual y analízala. Si ya se ha solicitado el DNI o RUC en mensajes anteriores, **no volver a pedirlo** y devolver el mensaje original tal cual (o no generar un mensaje nuevo si no hay `response_message`).
+    - No uses expresiones como "para identificarte mejor" o "para mejorar tu experiencia".
+    - Si es posible, incorpora la solicitud de DNI/RUC como un comentario al final del mensaje, en un tono amigable y casual.
+
+    **Conversación actual**: {conversacion_actual if conversacion_actual else '[No hay conversación registrada]'}
+    """
+
+
