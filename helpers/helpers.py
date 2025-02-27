@@ -228,3 +228,7 @@ def formatear_fecha_hora(fecha_str, hora_str):
     return fecha_formateada, hora_formateada
 
 
+def agregar_coma_al_dni(dni):
+    """Recibe un número de DNI y devuelve el mismo número con una coma al final."""
+    return f"{dni},"
+
