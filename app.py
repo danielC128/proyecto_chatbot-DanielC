@@ -418,7 +418,8 @@ def enviar_respuesta_v2(celular, cliente_nuevo, profileName):
                 #vuelve al inicio del bucle para otro intento
 
 
-
+#Falta agregar código que agregue la respuesta del bot a mongo
+#Falta un prompt y una funcion de openai para brindar informacion
 @celery.task
 def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
     print("Enviando respuesta a:", celular)
@@ -429,10 +430,12 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
     dbMySQLManager = DataBaseMySQLManager()
     dbBigQueryManager = DataBaseBigQueryManager()
 
+    #Obtener cliente mediante el celular que escribió
     cliente = dbMongoManager.obtener_cliente_por_celular(celular)
     if not cliente:
         return  # Cliente no existe en MongoDB, no hay conversación.
 
+    #Obtener la conversacion del cliente (por como está diseñado obtiene TODA la conversacion, todo el historial mejor dicho)
     conversation_actual = dbMongoManager.obtener_conversacion_actual(cliente["celular"])
 
     # Verificamos si el cliente ya está en proceso de enviar su DNI/RUC
@@ -443,7 +446,7 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
     ultimo_mensaje = conversation_actual[-1]["mensaje"].strip() if conversation_actual else ""
     ##
 
-    # Si el estado es "se_solicito_dni" y el último mensaje parece un DNI/RUC
+    # Si el estado es "se_solicito_dni" busca obtener el DNI que supuestamente escribio el cliente, si no lo obtiene hace return
     if estado_conversacion == "se_solicito_dni":
 
         #OBTENER EL DNI (mediante chatgpt hacer esto)
@@ -500,11 +503,12 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
         response_message = f"Tu código de pago es: {codigo_pago}. Puedes utilizarlo para completar tu pago."
         twilio.send_message(cliente["celular"], response_message)
 
-        # Resetear estado de conversación
+        # Resetear estado de conversación , lo pone como None , pero se puede poner como "activa" para seguir la logica de Rivas
         dbMongoManager.actualizar_estado_conversacion(cliente["celular"], None)
         return
 
-    # Si no está en espera de DNI, clasificamos la intención del mensaje
+    # Si no está en espera de DNI, clasificamos la intención del mensaje , esto es si el estado de la conversion es
+    # cualquiera menos "se_solicito_dni"
     intencion = openai.clasificar_intencion_botPago(conversation_actual)
     intencion_list = json_a_lista(intencion)
 
@@ -568,6 +572,13 @@ def whatsapp_bot_codigopago():
             dbMongoManager.crear_conversacion_activa(celular)
 
         #Se agrega la interacción del cliente a la conversacion actual
+        #IMPORTANTE, el código de rivas hace que cada mensaje del cliente
+        #se coloca en una interaccion distinta (por el crear_nueva_interaccion)
+        #esto hace que varias interacciones queden con el mensaje del bot
+        #vacio ya que no se responden , sin embargo
+        #al bot se le pasa toda la conversacion (max 100 tokens) por lo que
+        #en cierta medida sí analiza los mensajes anteriores
+        #solo que la respuesta del bot la guarda en la ultima interaccion
         dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)
         print("Interaccion del cliente guardada en la conversacion actual")
 
@@ -595,7 +606,7 @@ def whatsapp_bot_codigopago():
         #enviar_respuesta_v2 , por lo que es importante tener esas
         #funciones de mongodb
 
-        new_task = enviar_respuesta_v2.apply_async(
+        new_task = enviar_respuesta_v3.apply_async(
             args=[celular, cliente_nuevo, profileName],
             countdown=45
         )
