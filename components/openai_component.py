@@ -20,6 +20,12 @@ class OpenAIManager:
         )
         return response.choices[0].message.content.strip()
     
+    #LA SIGUIENTE FUNCIÓN ANALIZA LA VARIABLE conversation_actual , para determinar la intención, sin embargo
+    #conversation_actual tiene TODA LA CONVERSACION del cliente con el bot, no solo la actual,  entonces por eso
+    #se limita a max_tokens=100 para que analice solo la última parte ya que rivas no definió eso de que cuándo
+    #una conversacion acaba , por lo que no hay conversation_history como tal , solo hay una sola conversacion
+    #que está en conversation_actual
+
     def clasificar_intencion(self, conversation_actual, conversation_history):
         conversacion_actual_formateada = formatear_conversacion(conversation_actual)
         #conversacion_history_formateada = formatear_historial_conversaciones(conversation_history)
@@ -124,57 +130,57 @@ class OpenAIManager:
 
 #FUNCIONES PARA BOT CODIGO PAGO
 
-#posible error, las verificciones en formato json , si no funciona prueba ponerlo como el clasificar_intencion original
-def clasificar_intencion_botPago(self, conversation_actual, conversation_history):
-    try:
-        # Formatear la conversación actual
-        conversacion_actual_formateada = formatear_conversacion(conversation_actual)
+    #posible error, las verificciones en formato json , si no funciona prueba ponerlo como el clasificar_intencion original
+    def clasificar_intencion_botPago(self, conversation_actual):
+        try:
+            # Formatear la conversación actual
+            conversacion_actual_formateada = formatear_conversacion(conversation_actual)
 
-        # Obtener la fecha actual en zona horaria de Lima
-        fecha_actual = datetime.now(pytz.timezone("America/Lima")).strftime("%Y-%m-%d")
-        print("Fecha actual:", fecha_actual)
+            # Obtener la fecha actual en zona horaria de Lima
+            fecha_actual = datetime.now(pytz.timezone("America/Lima")).strftime("%Y-%m-%d")
+            print("Fecha actual:", fecha_actual)
 
-        # Generar el mensaje del sistema con el prompt
-        prompt_sistema = prompt_intencionesv2(fecha_actual) + conversacion_actual_formateada
+            # Generar el mensaje del sistema con el prompt
+            prompt_sistema = prompt_intencionces_codPago(fecha_actual) + conversacion_actual_formateada
 
-        # Llamar a la API de OpenAI (GPT-4o)
+            # Llamar a la API de OpenAI (GPT-4o)
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "system", "content": prompt_sistema}],
+                max_tokens=100,  #cambiar este dato en caso pruebes con un mensaje largo y openai no lo analice por completo la conversa
+            )
+
+            # Obtener la respuesta generada
+            respuesta_texto = response.choices[0].message.content.strip()
+            print("Respuesta del modelo:", respuesta_texto)  # Log de depuración
+
+            # Intentar cargar la respuesta como JSON
+            try:
+                respuesta_json = json.loads(respuesta_texto)
+                
+                # Validar que la clave "intencion" esté presente en el JSON
+                if "intencion" in respuesta_json:
+                    return respuesta_json
+                else:
+                    print("Advertencia: La respuesta no contiene la clave 'intencion'.")
+                    return {"error": "Respuesta inválida del modelo"}
+            
+            except json.JSONDecodeError:
+                print("Error: La respuesta del modelo no es un JSON válido.")
+                return {"error": "Formato incorrecto de la respuesta"}
+
+        except Exception as e:
+            print("Error al clasificar la intención:", str(e))
+            return {"error": "Error en la clasificación"}
+
+
+    def consulta_dni_ruc_botPago(self, cliente, response_message=None, conversation_actual=None):
         response = self.client.chat.completions.create(
             model="gpt-4o",
-            messages=[{"role": "system", "content": prompt_sistema}],
-            max_tokens=100,
+            messages=[
+                {"role": "system", "content": prompt_cliente_dni_ruc(cliente, response_message, formatear_conversacion(conversation_actual))},
+            ],
+            max_tokens=150,
         )
-
-        # Obtener la respuesta generada
-        respuesta_texto = response.choices[0].message.content.strip()
-        print("Respuesta del modelo:", respuesta_texto)  # Log de depuración
-
-        # Intentar cargar la respuesta como JSON
-        try:
-            respuesta_json = json.loads(respuesta_texto)
-            
-            # Validar que la clave "intencion" esté presente en el JSON
-            if "intencion" in respuesta_json:
-                return respuesta_json
-            else:
-                print("Advertencia: La respuesta no contiene la clave 'intencion'.")
-                return {"error": "Respuesta inválida del modelo"}
-        
-        except json.JSONDecodeError:
-            print("Error: La respuesta del modelo no es un JSON válido.")
-            return {"error": "Formato incorrecto de la respuesta"}
-
-    except Exception as e:
-        print("Error al clasificar la intención:", str(e))
-        return {"error": "Error en la clasificación"}
-
-
-def consulta_dni_ruc_botPago(self, cliente, response_message=None, conversation_actual=None):
-    response = self.client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": prompt_cliente_dni_ruc(cliente, response_message, formatear_conversacion(conversation_actual))},
-        ],
-        max_tokens=150,
-    )
-    return response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
 
