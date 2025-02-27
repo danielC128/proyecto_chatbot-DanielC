@@ -187,9 +187,9 @@ class DataBaseBigQueryManager:
         if row:
             mora = row.Mora
             if mora in (0, 1):
-                return self.obtener_codigo_recaudacion_1contrato(dni)
+                return self.obtener_codigo_recaudacion_1contrato(dni) , "de recaudacion"
             elif mora in (2, 3):
-                return self.obtener_codigo_especial_1contrato(dni)
+                return self.obtener_codigo_especial_1contrato(dni) , "especial"
         
         return -1  # Si no cumple ninguna condición, retorna -1
 

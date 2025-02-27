@@ -20,12 +20,12 @@ else:
 
 
 
-dni_a_buscar = "09771642"
+dni_a_buscar = "74641532"
 dni_coma = agregar_coma_al_dni(dni_a_buscar)
 datos_cliente = db_manager.obtener_datos_cliente(dni_coma)
     
 if datos_cliente:
-    print("✅ Datos del cliente encontrados:")
+    print(f"✅ Datos del cliente con DNI {dni_a_buscar} encontrados:")
     print(datos_cliente)
 else:
     print(f"❌ No se encontró un cliente con DNI {dni_a_buscar}.")
@@ -36,13 +36,13 @@ dni_coma = agregar_coma_al_dni(dni_a_buscar)
 cod_bco = db_manager.obtener_codigo_recaudacion_1contrato(dni_coma)
 
 if cod_bco:
-    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el Cod_Bco: {cod_bco}")
+    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el codigo de recaudacion: {cod_bco}")
 else:
     print(f"❌ No se encontró un Cod_Bco único para el DNI {dni_a_buscar} o el cliente no está activo.")
 
 
 
-dni_a_buscar = "71023115"
+dni_a_buscar = "74641532"
 dni_coma = agregar_coma_al_dni(dni_a_buscar)
 cod_especial = db_manager.obtener_codigo_especial_1contrato(dni_coma)
 
@@ -55,10 +55,10 @@ else:
 
 dni_a_buscar = "09714719"
 dni_coma = agregar_coma_al_dni(dni_a_buscar)
-cod_especial = db_manager.obtener_codigo_1contrato(dni_coma)
+codi, tipo= db_manager.obtener_codigo_1contrato(dni_coma)
 
-if cod_especial:
-    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el codigo: {cod_especial}")
+if codi:
+    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el codigo {tipo}: {codi}")
 else:
     print(f"❌ No se encontró un codigo para el DNI {dni_a_buscar} o el cliente no está activo.")
 
@@ -68,7 +68,7 @@ dni_a_buscar = "09714719"
 dni_coma = agregar_coma_al_dni(dni_a_buscar)
 flag = db_manager.tiene_1_contrato_o_mas(dni_coma)
 if(flag == 1):
-    print("Tiene solo 1 contrato")
+    print(f"✅ El cliente con DNI {dni_a_buscar} tiene solo 1 contrato activo")
 elif(flag == 2):
     print("Tiene más de un contrato")
 else:

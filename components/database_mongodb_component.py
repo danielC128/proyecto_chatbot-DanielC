@@ -342,3 +342,55 @@ class DataBaseMongoDBManager:
 
         print(f"No se encontró una conversación activa para el cliente con celular {celular}.")
         return -1  # Retorna -1 si no hay una conversación activa
+    
+
+
+
+    def obtener_estado_conversacion(self, celular):
+        self._reconnect_if_needed()  # Verifica o reconecta
+        """Obtiene el estado de la conversación activa del cliente, si existe."""
+
+        cliente = self.db.clientes.find_one({"celular": celular})
+
+        if not cliente:
+            return "Cliente no encontrado"
+
+        # Buscar la última conversación activa
+        for conversacion in reversed(cliente.get("conversaciones", [])):
+            if conversacion.get("estado") == "activa":
+                return conversacion.get("estado")
+
+        return "No hay conversación activa"
+
+
+    def actualizar_estado_conversacion(self, celular, nuevo_estado):
+        self._reconnect_if_needed()  # Verifica o reconecta
+        """Actualiza el estado de la conversación activa del cliente.
+        
+        Args:
+            celular (str): Número de celular del cliente.
+            nuevo_estado (str | None): Nuevo estado de la conversación (ej. 'completada'). Si es None, no actualiza nada.
+        
+        Returns:
+            str: Mensaje indicando el resultado de la operación.
+        """
+        if nuevo_estado is None:
+            return "No se especificó un nuevo estado para la conversación."
+
+        # Buscar una conversación activa del cliente
+        cliente = self.db.clientes.find_one({"celular": celular})
+
+        if not cliente:
+            return "Cliente no encontrado."
+
+        # Buscar y actualizar la conversación activa
+        resultado = self.db.clientes.update_one(
+            {"celular": celular, "conversaciones.estado": "activa"},
+            {"$set": {"conversaciones.$.estado": nuevo_estado}}
+        )
+
+        if resultado.matched_count == 0:
+            return "No se encontró una conversación activa para actualizar."
+
+        return f"Estado de la conversación actualizado a '{nuevo_estado}'."
+

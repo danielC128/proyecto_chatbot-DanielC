@@ -368,6 +368,7 @@ def whatsapp_bot():
 def enviar_respuesta_v2(celular, cliente_nuevo, profileName):
     #Verificar el numero de celular a evaluar
     print("Enviando respuesta a: ", celular)
+
     # Inicializo los componentes dentro de la tarea
     twilio = TwilioManager()
     openai = OpenAIManager()
@@ -375,7 +376,153 @@ def enviar_respuesta_v2(celular, cliente_nuevo, profileName):
     dbMySQLManager = DataBaseMySQLManager()
     dbBigQueryManager = DataBaseBigQueryManager()
     
+    #Recuperar el cliente de MongoDB
+    cliente = dbMongoManager.obtener_cliente_por_celular(celular)
+    if not cliente:
+        return #ya que cliente no existe en mongodb y por lo tanto no habría conversacion
+    
 
+    #Obtener la conversacion actual del cliente
+    conversation_actual = dbMongoManager.obtener_conversacion_actual(cliente["celular"])
+
+    #Obtener el historial de conversaciones del cliente en caso tenga
+    conversation_history = dbMongoManager.obtener_historial_conversaciones(cliente["celular"])
+
+    #verificar la conversacion en la terminal
+    print("Conversacion actual:", conversation_actual)
+
+    #PARTE MAPEO INTENCION Y ENVIO DE RESPUESTA
+
+    max_intentos = 5
+    intento_actual = 0
+
+    while intento_actual < max_intentos:
+        try:
+            #escribir codigo aqui
+            num = 1 #para rellenar y que no aparezca en rojo jeje
+        except Exception as e:
+            intento_actual += 1
+            print(f"Error procesando intenciones (intento {intento_actual}/{max_intentos}): {e}")
+
+            if intento_actual == max_intentos:
+                response_message = "Lo siento, hubo un problema al procesar tu mensaje. Por favor intenta más tarde."
+                twilio.send_message(cliente["celular"], response_message)
+                dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
+                #dbMySQLManager.actualizar_fecha_ultima_interaccion_bot()
+
+                clear_scheduled_task_id(celular)
+                print(f"Termino la tarea para {celular}, limpiando task_id en Redis.")
+                break
+            else:
+                print("Reintentando desde la clasificacion de intencion...")
+                #vuelve al inicio del bucle para otro intento
+
+
+
+@celery.task
+def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
+    print("Enviando respuesta a:", celular)
+
+    twilio = TwilioManager()
+    openai = OpenAIManager()
+    dbMongoManager = DataBaseMongoDBManager()
+    dbMySQLManager = DataBaseMySQLManager()
+    dbBigQueryManager = DataBaseBigQueryManager()
+
+    cliente = dbMongoManager.obtener_cliente_por_celular(celular)
+    if not cliente:
+        return  # Cliente no existe en MongoDB, no hay conversación.
+
+    conversation_actual = dbMongoManager.obtener_conversacion_actual(cliente["celular"])
+
+    # Verificamos si el cliente ya está en proceso de enviar su DNI/RUC
+    estado_conversacion = dbMongoManager.obtener_estado_conversacion(cliente["celular"])
+    
+    #ESTO CREO QUE SE BORRA
+    # Obtenemos el último mensaje del cliente
+    ultimo_mensaje = conversation_actual[-1]["mensaje"].strip() if conversation_actual else ""
+    ##
+
+    # Si el estado es "se_solicito_dni" y el último mensaje parece un DNI/RUC
+    if estado_conversacion == "se_solicito_dni":
+
+        #OBTENER EL DNI (mediante chatgpt hacer esto)
+        if re.match(r"^\d{8}$", ultimo_mensaje):  # DNI (8 dígitos)
+            tipo_documento = "DNI"
+        elif re.match(r"^\d{11}$", ultimo_mensaje):  # RUC (11 dígitos)
+            tipo_documento = "RUC"
+        else:
+            response_message = "El documento ingresado no es válido. Por favor envía un DNI (8 dígitos) o RUC (11 dígitos)."
+            twilio.send_message(cliente["celular"], response_message)
+            return
+
+        dni = ultimo_mensaje
+        #FIN OBTENER DNI
+
+        # Verificar si el cliente está activo
+        if not dbBigQueryManager.cliente_esta_activo(dni):
+            response_message = "No encontramos tu información en nuestra base de datos. Verifica tu DNI/RUC e intenta de nuevo."
+            twilio.send_message(cliente["celular"], response_message)
+            return
+        
+        # Obtener datos del cliente
+        datos_cliente = dbBigQueryManager.obtener_datos_cliente(dni)
+        if not datos_cliente:
+            response_message = "No encontramos tu información en nuestra base de datos. Inténtalo más tarde."
+            twilio.send_message(cliente["celular"], response_message)
+            return
+        
+        nombre, apellido, celular, email = datos_cliente["nombre"], datos_cliente["apellido"], datos_cliente["celular"], datos_cliente["email"]
+
+        # Insertar cliente en MySQL si no existe
+        dbMySQLManager.insertar_cliente(dni, tipo_documento, nombre, apellido, celular, email)
+
+        # Obtener el ID del cliente en MySQL
+        id_cliente = dbMySQLManager.obtener_id_cliente_por_dni(dni)
+
+        # Verificar si el cliente tiene solo 1 contrato
+        if dbBigQueryManager.tiene_1_contrato_o_mas(dni) != 1:
+            response_message = "No podemos procesar tu pago en este momento. Contáctanos para más información."
+            twilio.send_message(cliente["celular"], response_message)
+            return
+
+        # Obtener el código de pago
+        codigo_pago = dbBigQueryManager.obtener_codigo_1contrato(dni)
+        if not codigo_pago:
+            response_message = "No encontramos un código de pago asociado a tu cuenta. Contáctanos para más información."
+            twilio.send_message(cliente["celular"], response_message)
+            return
+
+        # Insertar código en MySQL
+        dbMySQLManager.insertar_codigoPago(id_cliente, codigo_pago, tipo_documento, "", datetime.now())
+
+        # Enviar código al cliente
+        response_message = f"Tu código de pago es: {codigo_pago}. Puedes utilizarlo para completar tu pago."
+        twilio.send_message(cliente["celular"], response_message)
+
+        # Resetear estado de conversación
+        dbMongoManager.actualizar_estado_conversacion(cliente["celular"], None)
+        return
+
+    # Si no está en espera de DNI, clasificamos la intención del mensaje
+    intencion = openai.clasificar_intencion_botPago(conversation_actual)
+    intencion_list = json_a_lista(intencion)
+
+    if "informacion" in intencion_list:
+        #Generar mediante chatgpt texto explicativo del proceso
+        response_message = "Existen 3 tipos de códigos de pago: Recaudación, Extranet y Especial. ¿Necesitas más detalles?"
+        twilio.send_message(cliente["celular"], response_message)
+
+    elif "pago" in intencion_list:
+        #usar consulta dni ruc
+        response_message = openai.consulta_dni_ruc_botPago(cliente, None , conversation_actual)
+        twilio.send_message(cliente["celular"], response_message)
+        
+        # Guardamos en MongoDB que esperamos el DNI
+        dbMongoManager.actualizar_estado_conversacion(cliente["celular"], "se_solicito_dni")
+
+    else:
+        print("Otra intención detectada. No se procesa.")
 
 
 
@@ -407,11 +554,28 @@ def whatsapp_bot_codigopago():
         #tambien agrega la interaccion del cliente a la conversacion actual (?)
 
         #de la linea 318 a la linea 335 de la ruta 1
-        
+        cliente = dbMongoManager.obtener_cliente_por_celular(celular)
+        cliente_nuevo = False
+        if not cliente:
+            cliente_nuevo = True
+            cliente = dbMongoManager.crear_cliente(nombre="", celular=celular)
+            print("Cliente creado:", cliente)
+        print("Cliente encontrado en la base de datos: ", cliente["nombre"])
+
+        if not dbMongoManager.hay_conversacion_activa(celular):
+            #crear conversacion activa
+            print("Creando una nueva conversacion activa para el cliente.")
+            dbMongoManager.crear_conversacion_activa(celular)
+
+        #Se agrega la interacción del cliente a la conversacion actual
+        dbMongoManager.crear_nueva_interaccion(celular, incoming_msg)
+        print("Interaccion del cliente guardada en la conversacion actual")
+
         #fin MONGODB
 
 
 
+        #PROBAR ELIMINAR ESTO SI HAY UN ERROR
         #Revisa si hay una tarea pendiente para este celular y de ser
         #necesario, eliminarla para tratar la nueva tarea
         old_task_id = get_scheduled_task_id(celular)
@@ -432,7 +596,7 @@ def whatsapp_bot_codigopago():
         #funciones de mongodb
 
         new_task = enviar_respuesta_v2.apply_async(
-            args=[celular, profileName],
+            args=[celular, cliente_nuevo, profileName],
             countdown=45
         )
 
