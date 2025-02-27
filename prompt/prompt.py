@@ -497,3 +497,25 @@ def prompt_cliente_dni_ruc(cliente, response_message=None, conversacion_actual=N
     """
 
 
+def prompt_obtener_dni(conversation_text):
+    return f"""
+    Eres un asistente experto en análisis de conversaciones. Tu tarea es analizar el siguiente diálogo entre un cliente y un chatbot, y extraer un número de documento si el cliente lo ha proporcionado.
+
+    Tipos de documentos:
+    - **DNI**: 8 dígitos numéricos (Ejemplo: 87654321)
+    - **RUC**: 11 dígitos numéricos (Ejemplo: 20567891234)
+
+    ### Instrucciones:
+    1. Busca en la conversación si el cliente proporcionó un DNI o RUC.
+    2. Si el cliente brindó un **RUC** (11 dígitos), este tiene prioridad sobre el **DNI** (8 dígitos).
+    3. Si el cliente no mencionó ningún número válido, responde con `{"tipo": null, "numero": null}`.
+    4. Devuelve **únicamente un JSON válido** en la respuesta, sin agregar texto adicional.
+
+    ### Conversación:
+    {conversation_text}
+
+    ### Formato de respuesta esperado:
+    {{"tipo": "DNI" o "RUC", "numero": "XXXXXXXX"}}
+    Si no hay ningún número, responde con:
+    {{"tipo": null, "numero": null}}
+    """

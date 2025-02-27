@@ -1,6 +1,6 @@
 from openai import OpenAI
 from api_keys.api_keys import openai_api_key
-from prompt.prompt import prompt_intenciones, prompt_lead_estado, prompt_cliente_nombre, prompt_lead_estado_zoho, prompt_intencionesv2,prompt_consulta_v4, prompt_intencionces_codPago, prompt_cliente_dni_ruc
+from prompt.prompt import prompt_intenciones, prompt_lead_estado, prompt_cliente_nombre, prompt_lead_estado_zoho, prompt_intencionesv2,prompt_consulta_v4, prompt_intencionces_codPago, prompt_cliente_dni_ruc, prompt_obtener_dni
 from helpers.helpers import formatear_conversacion, formatear_historial_conversaciones, formatear_horarios_disponibles
 import pytz
 import json
@@ -183,4 +183,38 @@ class OpenAIManager:
             max_tokens=150,
         )
         return response.choices[0].message.content.strip()
+    
 
+
+    def obtener_dni_brindado(self, conversation_actual):
+        """
+        Usa OpenAI para extraer el DNI o RUC de la conversación actual.
+        """
+        conversacion_texto = formatear_conversacion(conversation_actual)  # Convertir la conversación a texto
+        
+        # Generar el prompt para OpenAI
+        prompt = prompt_obtener_dni(conversacion_texto)
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "system", "content": prompt}],
+                max_tokens=50
+            )
+
+            respuesta_texto = response.choices[0].message.content.strip()
+            print("Respuesta OpenAI:", respuesta_texto)  # Para depuración
+
+            # Intentar parsear la respuesta como JSON
+            dni_data = json.loads(respuesta_texto)
+
+            # Validar la estructura del JSON
+            if isinstance(dni_data, dict) and "tipo" in dni_data and "numero" in dni_data:
+                if dni_data["tipo"] in ["DNI", "RUC"] and dni_data["numero"].isdigit():
+                    return dni_data  # Retorna el DNI o RUC detectado
+            
+            return None  # No se encontró un documento válido
+
+        except Exception as e:
+            print("Error al procesar el DNI/RUC:", str(e))
+            return None
