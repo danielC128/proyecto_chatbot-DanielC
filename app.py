@@ -16,6 +16,7 @@ from components.database_mongodb_component import DataBaseMongoDBManager
 from components.database_mysql_component import DataBaseMySQLManager
 from components.leader_csv_component import LeadManager
 from components.zoho_component import ZohoCRMManager
+from components.database_bigquery_component import DataBaseBigQueryManager
 from helpers.helpers import format_number, extraer_json,json_a_lista
 from api_keys.api_keys import client_id_zoho, client_secret_zoho, refresh_token_zoho
 from celery_app import celery
@@ -364,9 +365,19 @@ def whatsapp_bot():
 
 #Función para enviar revisar la intención y enviar la respuesta al cliente después del retardo (para código pago)
 @celery.task
-def enviar_respuesta_v2(celular, profileName):
+def enviar_respuesta_v2(celular, cliente_nuevo, profileName):
     #Verificar el numero de celular a evaluar
     print("Enviando respuesta a: ", celular)
+    # Inicializo los componentes dentro de la tarea
+    twilio = TwilioManager()
+    openai = OpenAIManager()
+    dbMongoManager = DataBaseMongoDBManager()
+    dbMySQLManager = DataBaseMySQLManager()
+    dbBigQueryManager = DataBaseBigQueryManager()
+    
+
+
+
 
 @app.route('/bot_pago', methods=['POST'])  #RUTA 3 (código bot pago)
 def whatsapp_bot_codigopago():
@@ -396,7 +407,7 @@ def whatsapp_bot_codigopago():
         #tambien agrega la interaccion del cliente a la conversacion actual (?)
 
         #de la linea 318 a la linea 335 de la ruta 1
-
+        
         #fin MONGODB
 
 
