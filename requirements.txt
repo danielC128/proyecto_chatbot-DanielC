@@ -12,3 +12,4 @@ pandas
 mysql.connector
 fcntl
 redis
+google-cloud-bigquery
