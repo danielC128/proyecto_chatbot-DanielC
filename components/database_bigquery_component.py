@@ -191,7 +191,7 @@ class DataBaseBigQueryManager:
             elif mora in (2, 3):
                 return self.obtener_codigo_especial_1contrato(dni) , "especial"
         
-        return -1  # Si no cumple ninguna condición, retorna -1
+        return -1, None  # Si no cumple ninguna condición, retorna -1 y None
 
 
 
