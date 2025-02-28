@@ -9,4 +9,4 @@ __pycache__/
 ~$clientes.xlsx
 
 # Ignorar archivo de api keys 
-api_keys.py
+**/api_keys.py

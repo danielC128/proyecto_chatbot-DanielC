@@ -5,6 +5,8 @@ import pytz
 
 #SÍ SE USA
 #Es el componente para que mysql funcione con nuestro programa
+#cambiar los nombres de las tablas a singular , están en plural
+
 
 class DataBaseMySQLManager:
     def __init__(self):
