@@ -448,7 +448,9 @@ def prompt_intenciones(fecha_actual):
 def prompt_intencionces_codPago(fecha_actual):
     fecha_obj = datetime.strptime(fecha_actual, "%Y-%m-%d")
 
-    dia_actual = fecha_obj.strptime("%A")
+    #dia_actual = fecha_obj.strptime("%A")
+    dia_actual = fecha_obj.strftime("%A")  # ✅ CORRECTO
+
     return f"""
     Asume el rol de un asistente virtual en una conversación por WhatsApp. La fecha actual es {fecha_actual} y es {dia_actual}. Con base a lo mencionado y considerando que estás en Lima, Perú, determina la opción necesaria para continuar el diálogo con el usuario, siguiendo estos criterios:
     
@@ -492,6 +494,7 @@ def prompt_cliente_dni_ruc(cliente, response_message=None, conversacion_actual=N
     - Ten en cuenta la conversación actual y analízala. Si ya se ha solicitado el DNI o RUC en mensajes anteriores, **no volver a pedirlo** y devolver el mensaje original tal cual (o no generar un mensaje nuevo si no hay `response_message`).
     - No uses expresiones como "para identificarte mejor" o "para mejorar tu experiencia".
     - Si es posible, incorpora la solicitud de DNI/RUC como un comentario al final del mensaje, en un tono amigable y casual.
+    - No menciones que creaste o generaste el mensaje, solo muestra el mensaje
 
     **Conversación actual**: {conversacion_actual if conversacion_actual else '[No hay conversación registrada]'}
     """
@@ -519,3 +522,28 @@ def prompt_obtener_dni(conversation_text):
     Si no hay ningún número, responde con:
     {{"tipo": null, "numero": null}}
     """
+
+
+def prompt_obtener_dniv2(conversation_text):
+    return f"""
+    Eres un asistente experto en análisis de conversaciones. Tu tarea es analizar el siguiente diálogo entre un cliente y un chatbot, y extraer un número de documento si el cliente lo ha proporcionado.
+
+    Tipos de documentos:
+    - **DNI**: 8 dígitos numéricos (Ejemplo: 87654321)
+    - **RUC**: 11 dígitos numéricos (Ejemplo: 20567891234)
+
+    ### Instrucciones:
+    1. Busca en la conversación si el cliente proporcionó un DNI o RUC.
+    2. Si el cliente brindó un **RUC** (11 dígitos), este tiene prioridad sobre el **DNI** (8 dígitos).
+    3. Si el cliente no mencionó ningún número válido, responde con `{{"tipo": null, "numero": null}}`.
+    4. Devuelve **únicamente un JSON válido** en la respuesta, sin agregar texto adicional.
+
+    ### Conversación:
+    {conversation_text}
+
+    ### Formato de respuesta esperado:
+    {{"tipo": "DNI" o "RUC", "numero": "XXXXXXXX"}}
+    Si no hay ningún número, responde con:
+    {{"tipo": null, "numero": null}}
+    """
+
