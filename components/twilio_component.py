@@ -1,19 +1,18 @@
 from twilio.rest import Client
 import os
-#from api_keys.api_keys import account_sid, auth_token, messaging_service_sid
+from api_keys.api_keys import account_sid, auth_token
 
 
 #SI SE USA
 #Es el componente de twilio
 
 class TwilioManager:
-    def __init__(self):
-        self.account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        self.auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    def _init_(self):
         self.client = self._authenticate()
 
     def _authenticate(self):
-        return Client(self.account_sid, self.auth_token)
+        return Client(account_sid, auth_token)
+
 
     def send_message(self, to_number, message_body):
         to_number = f'whatsapp:{to_number}' if not to_number.startswith('whatsapp:') else to_number

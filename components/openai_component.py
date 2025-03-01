@@ -7,13 +7,11 @@ import json
 import os
 import re
 from datetime import datetime
+from api_keys.api_keys import openai_api_key
 
 class OpenAIManager:
-    def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")  # Obtiene la clave desde la variable de entorno
-        if not api_key:
-            raise ValueError("La variable de entorno OPENAI_API_KEY no está configurada.")
-        self.client = OpenAI(api_key=api_key)
+    def _init_(self):
+        self.client = OpenAI(api_key=openai_api_key)
 
     def consulta(self, cliente,conversation_actual, conversation_history,cliente_nuevo,campania):
         response = self.client.chat.completions.create(
