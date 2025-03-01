@@ -2,6 +2,7 @@ from google.cloud import bigquery
 from components.database_bigquery_component import DataBaseBigQueryManager
 from helpers.helpers import agregar_coma_al_dni
 
+
 # Crear una instancia del administrador de BigQuery
 db_manager = DataBaseBigQueryManager()
 
@@ -12,7 +13,7 @@ es_activo = db_manager.cliente_esta_activo(dni_coma)
 
 # Mostrar el resultado
 if es_activo:
-    print(f"✅ El cliente con DNI {dni_prueba} está ACTIVO en la base de datos.")
+    print(f"✅ El cliente con DNI {dni_prueba} está ACTIVO en la base de datos. \n")
 else:
     print(f"❌ El cliente con DNI {dni_prueba} NO está ACTIVO en la base de datos.")
 
@@ -27,6 +28,7 @@ datos_cliente = db_manager.obtener_datos_cliente(dni_coma)
 if datos_cliente:
     print(f"✅ Datos del cliente con DNI {dni_a_buscar} encontrados:")
     print(datos_cliente)
+    print("\n")
 else:
     print(f"❌ No se encontró un cliente con DNI {dni_a_buscar}.")
 
@@ -36,18 +38,18 @@ dni_coma = agregar_coma_al_dni(dni_a_buscar)
 cod_bco = db_manager.obtener_codigo_recaudacion_1contrato(dni_coma)
 
 if cod_bco:
-    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el codigo de recaudacion: {cod_bco}")
+    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el codigo de recaudacion: {cod_bco}\n")
 else:
     print(f"❌ No se encontró un Cod_Bco único para el DNI {dni_a_buscar} o el cliente no está activo.")
 
 
-
+#Para m2 y m3
 dni_a_buscar = "74641532"
 dni_coma = agregar_coma_al_dni(dni_a_buscar)
 cod_especial = db_manager.obtener_codigo_especial_1contrato(dni_coma)
 
 if cod_especial:
-    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el cod_especial: {cod_especial}")
+    print(f"✅ El cliente con DNI {dni_a_buscar} tiene el cod_especial: {cod_especial} \n")
 else:
     print(f"❌ No se encontró un cod_especial único para el DNI {dni_a_buscar} o el cliente no está activo.")
 

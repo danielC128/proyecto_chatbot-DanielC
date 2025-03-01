@@ -22,7 +22,8 @@ class TestOpenAIManagerWithAPI(unittest.TestCase):
         }
         
         resultado = self.openai_manager.clasificar_intencion_botPago(conversation_actual)
-        print("Resultado 1:", resultado)
+        print("Resultado prueba 1 -> \n", resultado)
+        print("FIN Resultado prueba 1 \n")
         
         # Asegurar que la respuesta tiene el formato esperado
         self.assertIn("intencion", resultado)
@@ -45,8 +46,8 @@ class TestOpenAIManagerWithAPI(unittest.TestCase):
         }
 
         resultado = self.openai_manager.consulta_dni_ruc_botPago(cliente, None, conversation_actual)
-        print("Resultado 2:", resultado)
-        print("FIN Resultado 2")
+        print("Resultado prueba 2 -> \n", resultado)
+        print("FIN Resultado prueba 2 \n")
 
         self.assertIsInstance(resultado, str)  # Asegurar que devuelve un string
 
@@ -60,8 +61,8 @@ class TestOpenAIManagerWithAPI(unittest.TestCase):
         }
 
         resultado = self.openai_manager.obtener_dni_brindado(conversation_actual)
-        print("Resultado 3:", resultado)
-
+        print("Resultado prueba 3 -> \n", resultado)
+        print("FIN Resultado prueba 3\n")
         self.assertIsInstance(resultado, dict)  # Debe devolver un diccionario con el DNI
         self.assertIn("tipo", resultado)
         self.assertIn("numero", resultado)
