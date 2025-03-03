@@ -26,7 +26,7 @@ class DataBaseMongoDBManager:
         #uri = 'mongodb://localhost:27017/'
         uri = "mongodb+srv://admin:Camembert65@cluster0.1rtzz.mongodb.net/maqui_codigo_pago?retryWrites=true&w=majority"
         client = MongoClient(uri)
-        return client.chatbot_db
+        return client.maqui_codigo_pago
 
     def _reconnect_if_needed(self):
         """Reconecta si la conexión actual no está activa."""
@@ -55,14 +55,14 @@ class DataBaseMongoDBManager:
         }
         
         # Insertar cliente en la base de datos
-        self.db.clientes.insert_one(cliente)
+        self.db.clientes_codigo_pago.insert_one(cliente)
         print(f"Nuevo cliente creado con celular {celular}.")
         return cliente
 
     def obtener_conversacion_actual(self, celular):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Obtiene la conversación actual del cliente si está activa."""
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
         if cliente:
             for conversacion in cliente.get("conversaciones", []):
                 if conversacion.get("estado") == "activa":
@@ -73,7 +73,7 @@ class DataBaseMongoDBManager:
         self._reconnect_if_needed()  # Verifica o reconecta
         """Guarda una nueva interacción en la conversación actual y actualiza la última interacción."""
         timestamp = datetime.now(self.lima_tz).astimezone(pytz.utc)  # Hora en UTC
-        self.db.clientes.update_one(
+        self.db.clientes_codigo_pago.update_one(
             {"cliente_id": cliente_id, "conversaciones.estado": "activa"},
             {
                 "$push": {
@@ -91,7 +91,7 @@ class DataBaseMongoDBManager:
     def obtener_conversaciones_activas(self):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Obtiene todas las conversaciones activas en curso."""
-        return list(self.db.clientes.find(
+        return list(self.db.clientes_codigo_pago.find(
             {"conversaciones.estado": "activa"},
             {"conversaciones.$": 1}
         ))
@@ -99,12 +99,12 @@ class DataBaseMongoDBManager:
     def mover_conversacion_a_historial(self, cliente_id):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Mueve la conversación actual al historial y la marca como completada."""
-        cliente = self.db.clientes.find_one({"cliente_id": cliente_id})
+        cliente = self.db.clientes_codigo_pago.find_one({"cliente_id": cliente_id})
         if cliente:
             for conversacion in cliente.get("conversaciones", []):
                 if conversacion.get("estado") == "activa":
                     # Cambiar el estado de la conversación a completada
-                    self.db.clientes.update_one(
+                    self.db.clientes_codigo_pago.update_one(
                         {"cliente_id": cliente_id, "conversaciones.conversacion_id": conversacion["conversacion_id"]},
                         {"$set": {"conversaciones.$.estado": "completada"}}
                     )
@@ -113,13 +113,13 @@ class DataBaseMongoDBManager:
     def obtener_cliente_por_celular(self, celular):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Obtiene el documento de un cliente utilizando su número de celular."""
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
         return cliente
 
     def obtener_historial_conversaciones(self, celular):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Obtiene hasta tres conversaciones completadas del historial de un cliente, excluyendo las activas."""
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
         
         if not cliente:
             return []  # Retorna lista vacía si no encuentra al cliente
@@ -135,7 +135,7 @@ class DataBaseMongoDBManager:
     def guardar_respuesta_ultima_interaccion_chatbot(self, celular, respuesta_chatbot):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Guarda la respuesta del chatbot en la última interacción de la última conversación activa."""
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
         
         if not cliente:
             return "Cliente no encontrado"
@@ -158,7 +158,7 @@ class DataBaseMongoDBManager:
                         ultima_interaccion["mensaje_chatbot"] = respuesta_chatbot
                     
                     # Actualizar la conversación en la base de datos
-                    self.db.clientes.update_one(
+                    self.db.clientes_codigo_pago.update_one(
                         {"celular": celular, "conversaciones.conversacion_id": conversacion["conversacion_id"]},
                         {"$set": {"conversaciones.$.interacciones": conversacion["interacciones"]}}
                     )
@@ -169,7 +169,7 @@ class DataBaseMongoDBManager:
     def guardar_mensaje_cliente_ultima_interaccion(self, celular, mensaje_cliente):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Guarda el mensaje del cliente en la última interacción de la última conversación activa."""
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
         
         if not cliente:
             return "Cliente no encontrado"
@@ -191,7 +191,7 @@ class DataBaseMongoDBManager:
                         ultima_interaccion["mensaje_cliente"] = mensaje_cliente
                     
                     # Actualizar la conversación en la base de datos
-                    self.db.clientes.update_one(
+                    self.db.clientes_codigo_pago.update_one(
                         {"celular": celular, "conversaciones.conversacion_id": conversacion["conversacion_id"]},
                         {"$set": {"conversaciones.$.interacciones": interacciones}}
                     )
@@ -215,7 +215,7 @@ class DataBaseMongoDBManager:
         }
 
         # Actualizar la conversación activa del cliente con la nueva interacción
-        self.db.clientes.update_one(
+        self.db.clientes_codigo_pago.update_one(
             {"celular": celular, "conversaciones.estado": "activa"},
             {
                 "$push": {
@@ -239,7 +239,7 @@ class DataBaseMongoDBManager:
         }
 
         # Actualizar la conversación activa del cliente con la nueva interacción
-        self.db.clientes.update_one(
+        self.db.clientes_codigo_pago.update_one(
             {"celular": celular, "conversaciones.estado": "activa"},
             {
                 "$push": {
@@ -255,7 +255,7 @@ class DataBaseMongoDBManager:
     def hay_conversacion_activa(self, celular):
         self._reconnect_if_needed()  # Verifica o reconecta
         """Verifica si hay una conversación activa para el cliente usando el número de celular."""
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
         
         # Comprueba si existe una conversación activa en el campo 'conversaciones'
         if cliente:
@@ -275,7 +275,7 @@ class DataBaseMongoDBManager:
         }
         
         # Añade la nueva conversación en el array 'conversaciones'
-        self.db.clientes.update_one(
+        self.db.clientes_codigo_pago.update_one(
             {"celular": celular},
             {"$push": {"conversaciones": nueva_conversacion}}
         )
@@ -302,7 +302,7 @@ class DataBaseMongoDBManager:
             return "No hay cambios que realizar."
 
         # Actualizar el cliente en la base de datos
-        resultado = self.db.clientes.update_one(
+        resultado = self.db.clientes_codigo_pago.update_one(
             {"celular": celular},
             {"$set": campos_actualizar}
         )
@@ -328,7 +328,7 @@ class DataBaseMongoDBManager:
         self._reconnect_if_needed()  # Verifica o reconecta
 
         # Buscar el cliente por su celular
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
 
         if not cliente:
             print(f"No se encontró cliente con celular {celular}.")
@@ -350,7 +350,7 @@ class DataBaseMongoDBManager:
         self._reconnect_if_needed()  # Verifica o reconecta
         """Obtiene el estado de la conversación activa del cliente, si existe."""
 
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
 
         if not cliente:
             return "Cliente no encontrado"
@@ -378,13 +378,13 @@ class DataBaseMongoDBManager:
             return "No se especificó un nuevo estado para la conversación."
 
         # Buscar una conversación activa del cliente
-        cliente = self.db.clientes.find_one({"celular": celular})
+        cliente = self.db.clientes_codigo_pago.find_one({"celular": celular})
 
         if not cliente:
             return "Cliente no encontrado."
 
         # Buscar y actualizar la conversación activa
-        resultado = self.db.clientes.update_one(
+        resultado = self.db.clientes_codigo_pago.update_one(
             {"celular": celular, "conversaciones.estado": "activa"},
             {"$set": {"conversaciones.$.estado": nuevo_estado}}
         )
