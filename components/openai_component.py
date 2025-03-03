@@ -1,5 +1,4 @@
 from openai import OpenAI
-#from api_keys.api_keys import openai_api_key
 from prompt.prompt import prompt_intenciones, prompt_lead_estado, prompt_cliente_nombre, prompt_lead_estado_zoho, prompt_intencionesv2,prompt_consulta_v4, prompt_intencionces_codPago, prompt_cliente_dni_ruc, prompt_obtener_dni, prompt_obtener_dniv2
 from helpers.helpers import formatear_conversacion, formatear_historial_conversaciones, formatear_horarios_disponibles
 import pytz
