@@ -23,10 +23,10 @@ class DataBaseMySQLManager:
             connection = mysql.connector.connect(
                 #host='localhost',
                 #user='danielrp551',
-                #database='chatbot_db',
+                #database='botPago',
                 #password='26deJULIO@'
                 host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
-                database='chatbot_db',
+                database='botPago',
                 user='admin',
                 password='zQumSnUd9MNtjcsK'
             )
