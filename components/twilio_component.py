@@ -7,7 +7,7 @@ from api_keys.api_keys import account_sid, auth_token
 #Es el componente de twilio
 
 class TwilioManager:
-    def _init_(self):
+    def __init__(self):
         self.client = self._authenticate()
 
     def _authenticate(self):
