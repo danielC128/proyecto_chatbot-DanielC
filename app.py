@@ -64,63 +64,58 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
     dbMySQLManager = DataBaseMySQLManager()
     dbBigQueryManager = DataBaseBigQueryManager()
 
-    #Obtener cliente mediante el celular que escribió
+    # Obtener cliente mediante el celular que escribió
     cliente = dbMongoManager.obtener_cliente_por_celular(celular)
     if not cliente:
         return  # Cliente no existe en MongoDB, no hay conversación.
 
-    #Obtener la conversacion del cliente (por como está diseñado obtiene TODA la conversacion, todo el historial mejor dicho)
+    # Obtener la conversación actual del cliente
     conversation_actual = dbMongoManager.obtener_conversacion_actual(cliente["celular"])
 
     # Verificamos si el cliente ya está en proceso de enviar su DNI/RUC
     estado_conversacion = dbMongoManager.obtener_estado_conversacion(cliente["celular"])
 
-    # Si el estado es "se_solicito_dni" busca obtener el DNI que supuestamente escribio el cliente, si no lo obtiene hace return
-    # y si lo obtiene , procesa adecuadamente todo y devuelve el código , haciendo de igual forma return
-
+    # Si el estado es "se_solicito_dni", buscar el DNI brindado por el cliente
     if estado_conversacion == "se_solicito_dni":
+        doc_data = None
+        for intento in range(5):
+            try:
+                doc_data = openai.obtener_dni_brindado(conversation_actual)
+                if doc_data:
+                    break  # Si obtenemos el DNI correctamente, salimos del bucle
+            except Exception as e:
+                print(f"Error al obtener DNI en intento {intento + 1}: {e}")
+            time.sleep(1)
 
-        #OBTENER EL DNI
-        doc_data = openai.obtener_dni_brindado(conversation_actual)
-        dni = doc_data["numero"] if doc_data else None  #la variable deberia ser dni_ruc
+        dni = doc_data["numero"] if doc_data else None
         tipo_documento = doc_data["tipo"] if doc_data else None
 
-        #verificar doc_data
         if doc_data is None:
-            #el siguiente response también puede ser un prompt para openai, de momento es así
             response_message = "El documento ingresado no es válido. Por favor envía un DNI (8 dígitos) o RUC (11 dígitos)."
             dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
             twilio.send_message(cliente["celular"], response_message)
             return
-        print(f"El dni obtenido es: {dni}")
-        #FIN OBTENER DNI
 
-        #UNA VEZ OBTENIDO EL DNI
+        print(f"El DNI obtenido es: {dni}")
 
-        #PROCEDE VALIDAR DATOS DEL CLIENTE
-        # Verificar si el cliente está activo
+        # Verificar si el cliente está activo en BigQuery
         if not dbBigQueryManager.cliente_esta_activo(dni):
-            #lo siguiente podría ser un prompt
             response_message = "No encontramos tu información en nuestra base de datos. Verifica tu DNI/RUC e intenta de nuevo."
             dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
             twilio.send_message(cliente["celular"], response_message)
             return
-        
+
         # Obtener datos del cliente
         datos_cliente = dbBigQueryManager.obtener_datos_cliente(dni)
-
-        # Verificar datos
         if not datos_cliente:
-            #lo siguiente podría ser un prompt
             response_message = "No encontramos tu información en nuestra base de datos. Inténtalo más tarde."
             dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
             twilio.send_message(cliente["celular"], response_message)
             return
-        
+
         nombre, apellido, celular_bq, email = datos_cliente["Nombres"], datos_cliente["Apellido_Paterno"], datos_cliente["Telf_SMS"], datos_cliente["E_mail"]
 
         # Insertar cliente en MySQL si no existe
-        #si no funciona prueba poner estado tambien al final de los parametros
         dbMySQLManager.insertar_cliente(dni, tipo_documento, nombre, apellido, celular_bq, email)
 
         # Obtener el ID del cliente en MySQL
@@ -145,50 +140,61 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
         dbMySQLManager.insertar_codigoPago(id_cliente, codigo_pago, tipo_codigo, "", datetime.now())
 
         # Enviar código al cliente
-        #Hacer un prompt para enviar el código y ponerlo en response_message
         response_message = f"Tu código {tipo_codigo} es: {codigo_pago}. Puedes utilizarlo para completar tu pago."
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
         twilio.send_message(cliente["celular"], response_message)
 
-        # IMPORTANTE Resetear estado de conversación , lo pone como None , pero se puede poner como "activa" para seguir la logica de Rivas
+        # Resetear estado de conversación
         dbMongoManager.actualizar_estado_conversacion(cliente["celular"], None)
         return
 
+    # Si no está en espera de DNI, clasificamos la intención del mensaje
+    intencion = None
+    for intento in range(5):
+        try:
+            intencion = openai.clasificar_intencion_botPago(conversation_actual)
+            intencion_list = json_a_lista(intencion)
+            if intencion_list:
+                break  # Si obtenemos la intención correctamente, salimos del bucle
+        except Exception as e:
+            print(f"Error al clasificar intención en intento {intento + 1}: {e}")
+        time.sleep(1)
 
-
-
-    # ESTA ZONA DE ACÁ ABAJO es si no nos encontramos en proceso de analizar el dni
-    # y brindarle el código de pago
-
-
-    # Si no está en espera de DNI, clasificamos la intención del mensaje , esto es si el estado de la conversacion es
-    # cualquiera menos "se_solicito_dni"
-    intencion = openai.clasificar_intencion_botPago(conversation_actual)
-    intencion_list = json_a_lista(intencion)
+    if not intencion_list:
+        response_message = "Lo siento, no pude entender tu mensaje. Por favor intenta de nuevo."
+        dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
+        twilio.send_message(cliente["celular"], response_message)
+        return
 
     if "informacion" in intencion_list:
-        #Generar mediante chatgpt texto explicativo del proceso
         response_message = "Existen 3 tipos de códigos de pago: Recaudación, Extranet y Especial. ¿Necesitas más detalles?"
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
-        #agregar fecha de interaccion a la tabla conversacion (creo) de mysql
         twilio.send_message(cliente["celular"], response_message)
 
-
-        clear_scheduled_task_id(celular) #probar eliminar esto si no funciona
-        print(f"Terminó la tarea de dar informacion para {celular}, limpiando task_id en Redis.")
+        clear_scheduled_task_id(celular)
+        print(f"Terminó la tarea de dar información para {celular}, limpiando task_id en Redis.")
 
     elif "pago" in intencion_list:
-        #usar consulta dni ruc
-        response_message = openai.consulta_dni_ruc_botPago(cliente, None , conversation_actual)
+        response_message = None
+        for intento in range(5):
+            try:
+                response_message = openai.consulta_dni_ruc_botPago(cliente, None, conversation_actual)
+                if response_message:
+                    break  # Si obtenemos una respuesta válida, salimos del bucle
+            except Exception as e:
+                print(f"Error en consulta_dni_ruc_botPago en intento {intento + 1}: {e}")
+            time.sleep(1)
+
+        if not response_message:
+            response_message = "Hubo un problema al procesar tu solicitud. Inténtalo de nuevo más tarde."
+
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
-        #agregar fecha de interaccion a la tabla conversacion (creo) de mysql
         twilio.send_message(cliente["celular"], response_message)
 
-        # Guardamos en MongoDB que esperamos el DNI , servirá para la siguiente iteración
         dbMongoManager.actualizar_estado_conversacion(cliente["celular"], "se_solicito_dni")
 
-        clear_scheduled_task_id(celular) #probar eliminar esto si no funciona
-        print(f"Terminó la tarea solicitar dni o ruc para {celular}, limpiando task_id en Redis.")
+        clear_scheduled_task_id(celular)
+        print(f"Terminó la tarea de solicitar DNI/RUC para {celular}, limpiando task_id en Redis.")
     else:
         print("Otra intención detectada. No se procesa.")
 

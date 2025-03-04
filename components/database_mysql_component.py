@@ -41,7 +41,7 @@ class DataBaseMySQLManager:
         self._reconnect_if_needed()
         """Obtiene el cliente_id usando el número de celular."""
         cursor = self.connection.cursor()
-        query = "SELECT cliente_id FROM clientes WHERE celular = %s"
+        query = "SELECT cliente_id FROM cliente WHERE celular = %s"
         cursor.execute(query, (celular,))
         result = cursor.fetchone()
         return result[0] if result else None
@@ -53,7 +53,7 @@ class DataBaseMySQLManager:
 
     def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email,estado="nuevo"):
         self._reconnect_if_needed()
-        """Inserta un nuevo cliente en la tabla de clientes si no existe ya."""
+        """Inserta un nuevo cliente en la tabla de cliente si no existe ya."""
         if not self.existe_cliente_por_celular(celular):
             cursor = self.connection.cursor()
             query = """INSERT INTO cliente (documento_identidad, tipo_documento, nombre, apellido, celular, email,estado)
@@ -70,7 +70,7 @@ class DataBaseMySQLManager:
         self._reconnect_if_needed()
         """Obtiene los datos de un cliente por su ID."""
         cursor = self.connection.cursor(dictionary=True)
-        query = "SELECT * FROM clientes WHERE cliente_id = %s"
+        query = "SELECT * FROM cliente WHERE cliente_id = %s"
         cursor.execute(query, (cliente_id,))
         return cursor.fetchone()
 
@@ -136,7 +136,7 @@ class DataBaseMySQLManager:
             SELECT c.cita_id, c.fecha_cita, c.estado_cita, c.motivo, c.fecha_creacion, c.aviso, 
                cl.cliente_id, cl.nombre, cl.apellido, cl.celular
             FROM citas c
-            JOIN clientes cl ON c.cliente_id = cl.cliente_id
+            JOIN cliente cl ON c.cliente_id = cl.cliente_id
             WHERE c.estado_cita = %s
             """
         cursor.execute(query, (estado_cita,))
@@ -210,7 +210,7 @@ class DataBaseMySQLManager:
     def actualizar_estado_cliente(self, client_id, nuevo_estado):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        query = "UPDATE clientes SET estado = %s WHERE cliente_id = %s"
+        query = "UPDATE cliente SET estado = %s WHERE cliente_id = %s"
         cursor.execute(query,(nuevo_estado,client_id))
         self.connection.commit()
         print(f"Estado del cliente {client_id} actualizado a {nuevo_estado}.")
@@ -218,7 +218,7 @@ class DataBaseMySQLManager:
     def actualizar_estado_cliente_no_interes(self, client_id, nuevo_estado,categoria_no_interes,detalle_no_interes):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        query = "UPDATE clientes SET estado = %s, categoria_no_interes = %s, detalle_no_interes = %s WHERE cliente_id = %s"
+        query = "UPDATE cliente SET estado = %s, categoria_no_interes = %s, detalle_no_interes = %s WHERE cliente_id = %s"
         cursor.execute(query,(nuevo_estado,categoria_no_interes,detalle_no_interes,client_id))
         self.connection.commit()
         print(f"Estado del cliente {client_id} actualizado a {nuevo_estado}.")        
@@ -226,7 +226,7 @@ class DataBaseMySQLManager:
     def actualizar_fecha_ultima_interaccion(self, cliente_id, fecha):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        sql = "UPDATE clientes SET fecha_ultima_interaccion = %s WHERE cliente_id = %s"
+        sql = "UPDATE cliente SET fecha_ultima_interaccion = %s WHERE cliente_id = %s"
         cursor.execute(sql, (fecha, cliente_id))
 
         # Actualiza la fecha en la conversación activa
@@ -243,7 +243,7 @@ class DataBaseMySQLManager:
     def actualizar_fecha_ultima_interaccion_bot(self, cliente_id, fecha):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        sql = "UPDATE clientes SET fecha_ultima_interaccion_bot = %s WHERE cliente_id = %s"
+        sql = "UPDATE cliente SET fecha_ultima_interaccion_bot = %s WHERE cliente_id = %s"
         cursor.execute(sql, (fecha, cliente_id))
         
         # Actualiza la fecha en la conversación activa
@@ -275,7 +275,7 @@ class DataBaseMySQLManager:
         self._reconnect_if_needed()
         """Obtiene los datos de un cliente por su ID."""
         cursor = self.connection.cursor(dictionary=True)
-        query = "SELECT * FROM clientes"
+        query = "SELECT * FROM cliente"
         cursor.execute(query)
         return cursor.fetchall()
     def obtener_citas_pasadas(self, fecha_actual):
@@ -309,7 +309,7 @@ class DataBaseMySQLManager:
     def obtener_estado_cliente(self, cliente_id):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        sql = "SELECT estado FROM clientes WHERE cliente_id = %s"
+        sql = "SELECT estado FROM cliente WHERE cliente_id = %s"
         cursor.execute(sql, (cliente_id,))
         estado = cursor.fetchone()[0]
         cursor.close()
@@ -318,7 +318,7 @@ class DataBaseMySQLManager:
     def actualizar_nombre_cliente(self, cliente_id, nombre):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        sql = "UPDATE clientes SET nombre = %s WHERE cliente_id = %s"
+        sql = "UPDATE cliente SET nombre = %s WHERE cliente_id = %s"
         cursor.execute(sql, (nombre, cliente_id))
         self.connection.commit()
         cursor.close()
@@ -400,7 +400,7 @@ class DataBaseMySQLManager:
     def marcar_bound(self, cliente_id, bound):
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        query = "UPDATE clientes SET bound = %s WHERE cliente_id = %s"
+        query = "UPDATE cliente SET bound = %s WHERE cliente_id = %s"
         cursor.execute(query, (bound, cliente_id))
         self.connection.commit()
         cursor.close()
@@ -447,7 +447,7 @@ class DataBaseMySQLManager:
     
     def obtener_clientes_por_filtro(self, filtro):
         cursor = self.connection.cursor(dictionary=True)
-        query = "SELECT * FROM clientes WHERE " + filtro
+        query = "SELECT * FROM cliente WHERE " + filtro
         cursor.execute(query)
         return cursor.fetchall()
     
@@ -549,7 +549,7 @@ class DataBaseMySQLManager:
         cursor = self.connection.cursor(dictionary=True)
 
         # Construcción dinámica de la consulta
-        query = "SELECT * FROM clientes WHERE 1=1"
+        query = "SELECT * FROM cliente WHERE 1=1"
         params = []
 
         # Filtro por fecha de creación (si se proporciona)
@@ -600,7 +600,7 @@ class DataBaseMySQLManager:
         """
         self._reconnect_if_needed()
         cursor = self.connection.cursor()
-        query = "UPDATE clientes SET in_out = %s WHERE cliente_id = %s"
+        query = "UPDATE cliente SET in_out = %s WHERE cliente_id = %s"
         cursor.execute(query, (in_out_valor, cliente_id))
         self.connection.commit()
         cursor.close()
