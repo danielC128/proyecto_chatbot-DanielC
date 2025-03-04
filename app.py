@@ -205,6 +205,7 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
 
 @app.route('/bot_pago', methods=['POST'])  #RUTA 3 (código bot pago)
 def whatsapp_bot_codigopago():
+    print("Solicitud recibida en /bot_pago")
     try:
         #VER el contenido del mensaje, enviado por el cliente, 
         #a procesar
