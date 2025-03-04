@@ -9,7 +9,7 @@ from datetime import datetime
 from api_keys.api_keys import openai_api_key
 
 class OpenAIManager:
-    def _init_(self):
+    def __init__(self):
         self.client = OpenAI(api_key=openai_api_key)
 
     def consulta(self, cliente,conversation_actual, conversation_history,cliente_nuevo,campania):
@@ -179,6 +179,8 @@ class OpenAIManager:
 
 
     def consulta_dni_ruc_botPago(self, cliente, response_message=None, conversation_actual=None):
+        #prueba eliminar la linea de abajo si hay errores
+        conversation_actual = conversation_actual if conversation_actual is not None else {"interacciones": []}
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
