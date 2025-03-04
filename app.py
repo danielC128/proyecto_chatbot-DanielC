@@ -74,7 +74,7 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
 
     # Verificamos si el cliente ya está en proceso de enviar su DNI/RUC
     estado_conversacion = dbMongoManager.obtener_estado_conversacion(cliente["celular"])
-
+    print(f"El estado de la conversacion es : {estado_conversacion}\n")
     # Si el estado es "se_solicito_dni", buscar el DNI brindado por el cliente
     if estado_conversacion == "se_solicito_dni":
         doc_data = None
@@ -281,7 +281,7 @@ def whatsapp_bot_codigopago():
 
         new_task = enviar_respuesta_v3.apply_async(
             args=[celular, cliente_nuevo, profileName],
-            countdown=45
+            countdown=20
         )
 
 

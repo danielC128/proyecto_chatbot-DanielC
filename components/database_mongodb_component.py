@@ -216,7 +216,9 @@ class DataBaseMongoDBManager:
 
         # Actualizar la conversación activa del cliente con la nueva interacción
         self.db.clientes_codigo_pago.update_one(
-            {"celular": celular, "conversaciones.estado": "activa"},
+            {"celular": celular,
+             "conversaciones.estado": {"$in": ["activa", "se_solicito_dni"]}
+             },
             {
                 "$push": {
                     "conversaciones.$.interacciones": nueva_interaccion
