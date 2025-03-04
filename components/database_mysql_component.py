@@ -631,3 +631,16 @@ class DataBaseMySQLManager:
         return cursor.fetchone()
 
     
+    def obtener_id_cliente_por_dni(self, dni):
+        self._reconnect_if_needed()  # Asegura que la conexión esté activa
+        """Obtiene el ID del cliente a partir del DNI."""
+        
+        cursor = self.connection.cursor(dictionary=True)  # Cursor con resultados en formato diccionario
+        query = "SELECT cliente_id FROM cliente WHERE documento_identidad = %s"
+        
+        cursor.execute(query, (dni,))  # Ejecuta la consulta con el DNI como parámetro
+        resultado = cursor.fetchone()  # Obtiene la primera coincidencia
+        
+        return resultado["cliente_id"] if resultado else None  # Devuelve el ID o None si no existe
+
+
