@@ -153,20 +153,23 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
     for intento in range(5):
         try:
             intencion = openai.clasificar_intencion_botPago(conversation_actual)
+            print("🔍 Respuesta de OpenAI (sin procesar):", intencion)  # Ver qué devuelve OpenAI
             intencion_list = json_a_lista(intencion)
+            print("📌 Intenciones detectadas:", intencion_list)  # Ver qué detectó la función json_a_lista
             if intencion_list:
                 break  # Si obtenemos la intención correctamente, salimos del bucle
         except Exception as e:
             print(f"Error al clasificar intención en intento {intento + 1}: {e}")
         time.sleep(1)
 
-    if not intencion_list:
+    if not intencion_list or 3 in intencion_list:
         response_message = "Lo siento, no pude entender tu mensaje. Por favor intenta de nuevo."
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
         twilio.send_message(cliente["celular"], response_message)
         return
 
-    if "informacion" in intencion_list:
+    #if "informacion" in intencion_list:
+    if "informacion" in intencion_list or 1 in intencion_list:
         response_message = "Existen 3 tipos de códigos de pago: Recaudación, Extranet y Especial. ¿Necesitas más detalles?"
         dbMongoManager.guardar_respuesta_ultima_interaccion_chatbot(cliente["celular"], response_message)
         twilio.send_message(cliente["celular"], response_message)
@@ -174,7 +177,7 @@ def enviar_respuesta_v3(celular, cliente_nuevo, profileName):
         clear_scheduled_task_id(celular)
         print(f"Terminó la tarea de dar información para {celular}, limpiando task_id en Redis.")
 
-    elif "pago" in intencion_list:
+    elif "pago" in intencion_list or 2 in intencion_list:
         response_message = None
         for intento in range(5):
             try:
